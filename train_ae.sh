@@ -35,5 +35,5 @@ python3 ./src/train_ae.py \
 --valid_intv=10 \
 \
 --result_dir=$RESULT_DIR \
---snapshot_intv=1 \
+--snapshot_intv=10 \
 # --snapshot_dir=$SNAPSHOT_DIR \
