@@ -1,3 +1,7 @@
 __pycache__/
+.vscode/
 dataset/*
 result/*
+
+!dataset/.gitkeep
+!result/.gitkeep
