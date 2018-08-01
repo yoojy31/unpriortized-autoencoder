@@ -1,6 +1,6 @@
 #!/bin/bash
 
-RESULT_DIR=./result/celeb/basics_ae0/bagics00-bagics00-`date "+%02Y%m%d%H%M%S"`
+RESULT_DIR=./result/celeb/basics_ae0/basics00-basics00-`date "+%02Y%m%d%H%M%S"`
 
 mkdir $RESULT_DIR
 mkdir $RESULT_DIR/copy
@@ -8,10 +8,10 @@ cp -r src $RESULT_DIR/copy
 cp train.sh $RESULT_DIR/copy
 
 python3 ./src/train_ae.py \
---cur_device=0 \
+--cur_device=1 \
 \
---encoder=bagics00 \
---decoder=bagics00 \
+--encoder=basics00 \
+--decoder=basics00 \
 --discrim=none \
 \
 --dataset=celeb \
@@ -20,8 +20,8 @@ python3 ./src/train_ae.py \
 \
 --trainer=basics_ae0 \
 --start_epoch=0 \
---finish_epoch=30 \
---lr=2e-4 \
+--finish_epoch=10 \
+--lr=1e-3 \
 --beta1=0.9 \
 \
 --batch_size=128 \

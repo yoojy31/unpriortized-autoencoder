@@ -1,2 +1,2 @@
-from .bagics import BagicsEncoder00
+from .basics import BasicsEncoder00
 from .ar_mlp import ARMLPEncoder00, ARMLPEncoder01

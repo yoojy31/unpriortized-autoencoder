@@ -1,1 +1,1 @@
-from .bagics import BagicsDecoder00
+from .basics import BasicsDecoder00

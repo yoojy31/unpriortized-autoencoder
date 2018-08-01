@@ -4,7 +4,7 @@ import dataset
 import trainer
 
 encoder_dict = {
-    'bagics00': network.encoder.BagicsEncoder00,
+    'basics00': network.encoder.BasicsEncoder00,
     'ar_mlp00': network.encoder.ARMLPEncoder00,
     'ar_mlp01': network.encoder.ARMLPEncoder01,
     'none': None,
@@ -12,7 +12,7 @@ encoder_dict = {
 }
 
 decoder_dict = {
-    'bagics00': network.decoder.BagicsDecoder00,
+    'basics00': network.decoder.BasicsDecoder00,
     'none': None,
     None: None,
 }

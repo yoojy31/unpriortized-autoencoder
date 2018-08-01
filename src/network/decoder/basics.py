@@ -1,11 +1,11 @@
 import numpy as np
 import torch.nn as nn
 
-class BagicsDecoder00(nn.Module):
-    # bagics decoder network
+class BasicsDecoder00(nn.Module):
+    # basics decoder network
 
     def __init__(self, args):
-        super(BagicsDecoder00, self).__init__()
+        super(BasicsDecoder00, self).__init__()
         self.img_h = args.img_h
         self.img_w = args.img_w
         self.img_ch = args.img_ch
