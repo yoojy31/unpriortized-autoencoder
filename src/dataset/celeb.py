@@ -2,6 +2,7 @@ import os
 import numpy as np
 import scipy.misc
 import torch
+import utils
 from .__dataset__ import ImgDataset
 
 class Celeb(ImgDataset):
@@ -32,11 +33,7 @@ class Celeb(ImgDataset):
         return x
 
     def inv_preprocessing(self, x):
-        if x.is_cuda:
-            x = x.cpu().detach().numpy()
-        else:
-            x = x.detach().numpy()
-
+        x = x.cpu().detach().numpy()
         x = np.transpose(x, (1, 2, 0))
         x = (x + 1) * 127.5
         return x

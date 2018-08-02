@@ -23,9 +23,7 @@ class BagicsAETrainer0(Trainer):
     def forward(self, batch_dict, requires_grad):
         assert 'x' in batch_dict.keys()
 
-        x = batch_dict['x']
-        if self.is_cuda:
-            x = x.cuda()
+        x = batch_dict['x'].cuda()
         x.requires_grad_(requires_grad)
 
         self.encoder.train(True)
@@ -70,15 +68,15 @@ class BagicsAETrainer0(Trainer):
                 except StopIteration:
                     print('Training set: stop iteration\n')
 
-                train_time, (_, _, _, l_mse) = \
-                    timer(self.step, batch_dict, True)
-                train_log_writer.add_scalar(
-                    'l_mse', l_mse.item(), self.global_step)
+                train_time, (_, _, _, l_mse) = timer(self.step, batch_dict, True)
+
+                l_mse = l_mse.item()
+                train_log_writer.add_scalar('l_mse', l_mse, self.global_step)
 
                 value_dict = OrderedDict()
                 value_dict['batching time'] = batch_time
                 value_dict['training time'] = train_time
-                value_dict['l_mse (train)'] = l_mse.item()
+                value_dict['l_mse (train)'] = l_mse
 
                 if self.global_step % valid_intv == 0:
                     try:
@@ -87,10 +85,15 @@ class BagicsAETrainer0(Trainer):
                         valid_set_iter = iter(valid_set_loader)
                         batch_dict = next(valid_set_iter)
 
-                    _, _, _, l_mse = self.step(batch_dict, False)
-                    valid_log_writer.add_scalar(
-                        'l_mse', l_mse.item(), self.global_step)
-                    value_dict['l_mse (valid)'] = l_mse.item()
+                    _, z, _, l_mse = self.step(batch_dict, False)
+                    z = z.cpu().detach().numpy()
+                    l_mse = l_mse.item()
+
+                    valid_log_writer.add_scalar('l_mse', l_mse, self.global_step)
+                    valid_log_writer.add_histogram('z', z, self.global_step)
+                    valid_log_writer.add_histogram('z_0', z[:, 0], self.global_step)
+                    valid_log_writer.add_histogram('z_n', z[:, -1], self.global_step)
+                    value_dict['l_mse (valid)'] = l_mse
 
                 yield value_dict
 
@@ -103,6 +106,12 @@ class BagicsAETrainer0(Trainer):
         self.encoder.cuda()
         self.decoder.cuda()
         self.is_cuda = True
+
+    def decay_lr(self, decay_rate):
+        for param_group in self.optim.param_groups:
+            new_lr = param_group['lr'] * decay_rate
+            param_group['lr'] = new_lr
+        return new_lr
 
     def save_snapshot(self, save_dir):
         if not os.path.exists(save_dir):

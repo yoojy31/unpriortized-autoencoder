@@ -81,7 +81,7 @@ def main():
         epoch = int(trainer.global_step / num_batch)
 
         if trainer.global_step % args.print_intv == 0:
-            print('< Epoch %d/%d, Iteration %d/%d >' % \
+            print('< Epoch %d/%d, iteration %d/%d >' % \
                 (epoch, args.finish_epoch, batch_num, num_batch))
             for key, value in value_dict.items():
                 print('\t%s: %f' % (key, value))
@@ -93,13 +93,19 @@ def main():
             save_img_dir = os.path.join(img_dir, 'epoch-%03d' % epoch)
             utils.save_img_batch(save_img_dir, x, valid_dataset.inv_preprocessing, 'x')
             utils.save_img_batch(save_img_dir, _x, valid_dataset.inv_preprocessing, '_x')
-            print('< Save Image Batch: %s >' % save_img_dir)
+            print('< Save image batch: %s >\n' % save_img_dir)
+
+            # decay learning rate
+            if epoch != args.start_epoch and epoch % args.lr_decay_intv == 0:
+                new_lr = trainer.decay_lr(args.lr_decay_rate)
+                print('< Decay learning rate: %f --> %f >\n' %
+                      (new_lr/args.lr_decay_rate, new_lr))
 
             # save snapshot
             if epoch != args.start_epoch and epoch % args.snapshot_intv == 0:
                 save_snaphot_dir = os.path.join(snapshot_dir, 'epoch-%03d' % epoch)
                 trainer.save_snapshot(save_snaphot_dir)
-                print('< Save Snapshot: %s >\n' % save_snaphot_dir)
+                print('< Save snapshot: %s >\n' % save_snaphot_dir)
 
 if __name__ == '__main__':
     args = options.train_parser.parse_args()

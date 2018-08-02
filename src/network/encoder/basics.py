@@ -37,8 +37,6 @@ class BasicsEncoder00(nn.Module):
                 m.weight.data.normal_(0.0, 0.02)
                 if m.bias is not None:
                     m.bias.data.zero_()
-            else:
-                pass
 
     def forward(self, *x):
         z = self.encoder.forward(x[0])

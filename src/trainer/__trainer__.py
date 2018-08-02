@@ -23,6 +23,10 @@ class Trainer(abc.ABC):
         pass
 
     @abc.abstractmethod
+    def decay_lr(self, decay_rate):
+        pass
+
+    @abc.abstractmethod
     def save_snapshot(self, save_dir):
         pass
 

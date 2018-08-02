@@ -2,6 +2,7 @@ from struct import unpack
 import numpy as np
 import scipy.misc
 import torch
+import utils
 from .__dataset__ import ImgDataset
 
 class MNIST(ImgDataset):
@@ -62,11 +63,7 @@ class MNIST(ImgDataset):
         return x
 
     def inv_preprocessing(self, x):
-        if x.is_cuda:
-            x = x.cpu().numpy()
-        else:
-            x = x.numpy()
-
+        x = x.cpu().detach().numpy()
         x = np.transpose(x, (1, 2, 0))
         x = np.squeeze(x)
         x = (x + 1) * 127.5
