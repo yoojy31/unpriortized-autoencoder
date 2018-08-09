@@ -1,11 +1,12 @@
 import numpy as np
+import torch
 import torch.nn as nn
 
-class BasicsEncoder00(nn.Module):
-    # bagics encoder network
+class BasicEncoder00(nn.Module):
+    # Basic encoder network
 
     def __init__(self, args):
-        super(BasicsEncoder00, self).__init__()
+        super(BasicEncoder00, self).__init__()
         self.img_h = args.img_h
         self.img_w = args.img_w
         self.img_ch = args.img_ch
@@ -40,4 +41,20 @@ class BasicsEncoder00(nn.Module):
 
     def forward(self, *x):
         z = self.encoder.forward(x[0])
+        return z
+
+class BasicEncoder01(BasicEncoder00):
+    # Basic encoder network + tanh
+
+    def forward(self, *x):
+        z = self.encoder.forward(x[0])
+        z = nn.functional.tanh(z)
+        return z
+
+class BasicEncoder02(BasicEncoder00):
+    # Basic encoder network + ramp
+
+    def forward(self, *x):
+        z = self.encoder.forward(x[0])
+        z = torch.clamp(z, min=-1, max=1)
         return z

@@ -1,1 +1,1 @@
-from .basics import BasicsDecoder00
+from .basics import BasicDecoder00

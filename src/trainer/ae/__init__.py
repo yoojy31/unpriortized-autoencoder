@@ -1,1 +1,1 @@
-from .bagics import BagicsAETrainer0
+from .basics import BasicAETrainer0

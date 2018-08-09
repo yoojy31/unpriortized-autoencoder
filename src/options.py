@@ -4,15 +4,21 @@ import dataset
 import trainer
 
 encoder_dict = {
-    'basics00': network.encoder.BasicsEncoder00,
+    'basics00': network.encoder.BasicEncoder00,
+    'basics01': network.encoder.BasicEncoder01,
+    'basics02': network.encoder.BasicEncoder02,
+
     'ar_mlp00': network.encoder.ARMLPEncoder00,
     'ar_mlp01': network.encoder.ARMLPEncoder01,
+    'ar_mlp10': network.encoder.ARMLPEncoder10,
+    'ar_mlp11': network.encoder.ARMLPEncoder11,
+
     'none': None,
     None: None,
 }
 
 decoder_dict = {
-    'basics00': network.decoder.BasicsDecoder00,
+    'basics00': network.decoder.BasicDecoder00,
     'none': None,
     None: None,
 }
@@ -35,7 +41,7 @@ dataset_dict = {
 }
 
 trainer_dict = {
-    'basics_ae0': trainer.ae.BagicsAETrainer0,
+    'basics_ae0': trainer.ae.BasicAETrainer0,
     'none': None,
     None: None,
 }

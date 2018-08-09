@@ -8,11 +8,11 @@ from tensorboardX import SummaryWriter
 from utils import timer
 from ..__trainer__ import Trainer
 
-class BagicsAETrainer0(Trainer):
+class BasicAETrainer0(Trainer):
     # autoencoder trainer
 
     def __init__(self, encoder, decoder, optim, log_dir):
-        super(BagicsAETrainer0, self).__init__()
+        super(BasicAETrainer0, self).__init__()
         self.encoder = encoder
         self.decoder = decoder
         self.optim = optim
@@ -23,17 +23,17 @@ class BagicsAETrainer0(Trainer):
     def forward(self, batch_dict, requires_grad):
         assert 'x' in batch_dict.keys()
 
-        x = batch_dict['x'].cuda()
+        x = batch_dict['x'].cuda().cuda()
         x.requires_grad_(requires_grad)
-
-        self.encoder.train(True)
-        self.decoder.train(True)
 
         z = self.encoder(x)
         _x = self.decoder(z)
         return x, z, _x
 
     def step(self, batch_dict, update):
+        self.encoder.train(update)
+        self.decoder.train(update)
+
         x, z, _x = self.forward(batch_dict, update)
         l_mse = nn.functional.mse_loss(_x, x)
 
@@ -69,14 +69,13 @@ class BagicsAETrainer0(Trainer):
                     print('Training set: stop iteration\n')
 
                 train_time, (_, _, _, l_mse) = timer(self.step, batch_dict, True)
-
                 l_mse = l_mse.item()
-                train_log_writer.add_scalar('l_mse', l_mse, self.global_step)
 
                 value_dict = OrderedDict()
                 value_dict['batching time'] = batch_time
                 value_dict['training time'] = train_time
                 value_dict['l_mse (train)'] = l_mse
+                train_log_writer.add_scalar('l_mse', l_mse, self.global_step)
 
                 if self.global_step % valid_intv == 0:
                     try:
@@ -89,11 +88,11 @@ class BagicsAETrainer0(Trainer):
                     z = z.cpu().detach().numpy()
                     l_mse = l_mse.item()
 
+                    value_dict['l_mse (valid)'] = l_mse
                     valid_log_writer.add_scalar('l_mse', l_mse, self.global_step)
                     valid_log_writer.add_histogram('z', z, self.global_step)
                     valid_log_writer.add_histogram('z_0', z[:, 0], self.global_step)
                     valid_log_writer.add_histogram('z_n', z[:, -1], self.global_step)
-                    value_dict['l_mse (valid)'] = l_mse
 
                 yield value_dict
 
@@ -117,13 +116,13 @@ class BagicsAETrainer0(Trainer):
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
-        pathes = BagicsAETrainer0.join_path(save_dir)
+        pathes = BasicAETrainer0.join_path(save_dir)
         torch.save(self.encoder.state_dict(), pathes[0])
         torch.save(self.decoder.state_dict(), pathes[1])
         torch.save(self.optim.state_dict(), pathes[2])
 
     def load_snapshot(self, load_dir, learning_rate=None):
-        pathes = BagicsAETrainer0.join_path(load_dir)
+        pathes = BasicAETrainer0.join_path(load_dir)
         self.encoder.load_state_dict(torch.load(pathes[0]))
         self.decoder.load_state_dict(torch.load(pathes[1]))
         self.optim.load_state_dict(torch.load(pathes[2]))

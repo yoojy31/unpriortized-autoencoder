@@ -89,10 +89,18 @@ def main():
 
         if trainer.global_step % num_batch == 0:
             # save images
-            x, _, _x = trainer.forward(infer_batch_dict, False)
+            trainer.encoder.train(False)
+            trainer.decoder.train(False)
+            x, z, _x = trainer.forward(infer_batch_dict, False)
+            _x_m = utils.forward_masked_z(trainer.decoder, z[0:1])
+
             save_img_dir = os.path.join(img_dir, 'epoch-%03d' % epoch)
+            elmt_img_dir = os.path.join(save_img_dir, '000-_x_mask')
+
             utils.save_img_batch(save_img_dir, x, valid_dataset.inv_preprocessing, 'x')
             utils.save_img_batch(save_img_dir, _x, valid_dataset.inv_preprocessing, '_x')
+            utils.save_img_batch(elmt_img_dir, _x_m, valid_dataset.inv_preprocessing, '_x_elmt')
+            utils.save_img_batch(elmt_img_dir, _x_m, valid_dataset.inv_preprocessing, '_x_m')
             print('< Save image batch: %s >\n' % save_img_dir)
 
             # decay learning rate
