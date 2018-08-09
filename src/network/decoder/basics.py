@@ -10,14 +10,21 @@ class BasicDecoder00(nn.Module):
         self.img_ch = args.img_ch
         self.code_size = args.code_size
 
-        num_blocks = int(np.log2(np.min((self.img_size, self.img_size)))) - 1
+        num_blocks = int(np.log2(self.img_size)) - 1
         nfs = (2048, 1024, 512, 256, 128)
         nfs = (self.code_size,) + nfs[len(nfs)-(num_blocks-1):] + (self.img_ch,)
+
+        if self.img_size == 28:
+            first_k = 7
+        else:
+            # int(np.log2(self.img_size))
+            # == np.log2(self.img_size)
+            first_k = 4
 
         decoder = list()
         for i in range(num_blocks):
             if i == 0:
-                decoder.append(nn.ConvTranspose2d(nfs[i], nfs[i+1], 4, 1, 0, bias=False))
+                decoder.append(nn.ConvTranspose2d(nfs[i], nfs[i+1], first_k, 1, 0, bias=False))
             elif i == (num_blocks - 1):
                 decoder.append(nn.ConvTranspose2d(nfs[i], nfs[i+1], 4, 2, 1, bias=False))
                 decoder.append(nn.Tanh())

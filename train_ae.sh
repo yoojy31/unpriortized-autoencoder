@@ -28,9 +28,9 @@ python3 ./src/train_ae.py \
 --beta1=0.9 \
 \
 --batch_size=128 \
---img_size=16 \
+--img_size=32 \
 --img_ch=3 \
---code_size=64 \
+--code_size=32 \
 --num_bin=100 \
 \
 --print_intv=50 \
