@@ -7,24 +7,32 @@ class BasicEncoder00(nn.Module):
 
     def __init__(self, args):
         super(BasicEncoder00, self).__init__()
-        self.img_h = args.img_h
-        self.img_w = args.img_w
+        self.img_size = args.img_size
         self.img_ch = args.img_ch
         self.code_size = args.code_size
 
-        num_blocks = int(np.log2(np.min((self.img_h, self.img_w)))) - 1
+        num_blocks = int(np.log2(np.min((self.img_size, self.img_size)))) - 1
         nfs = (128, 256, 512, 1024, 2048)
         nfs = (self.img_ch,) + nfs[:num_blocks-1] + (self.code_size,)
+
+        pads = list()
+        cur_size = self.img_size
+        for i in range(num_blocks):
+            if cur_size % 2 == 0:
+                pads.append(1)
+            else:
+                pads.append(2)
+            cur_size = int(cur_size * 0.5)
 
         encoder = list()
         for i in range(num_blocks):
             if i == 0:
-                encoder.append(nn.Conv2d(nfs[i], nfs[i+1], 4, 2, 1, bias=False))
+                encoder.append(nn.Conv2d(nfs[i], nfs[i+1], 4, 2, pads[i], bias=False))
                 encoder.append(nn.LeakyReLU(0.2, inplace=True))
             elif i == (num_blocks - 1):
                 encoder.append(nn.Conv2d(nfs[i], nfs[i+1], 4, 1, 0, bias=False))
             else:
-                encoder.append(nn.Conv2d(nfs[i], nfs[i+1], 4, 2, 1, bias=False))
+                encoder.append(nn.Conv2d(nfs[i], nfs[i+1], 4, 2, pads[i], bias=False))
                 encoder.append(nn.BatchNorm2d(nfs[i+1], affine=True))
                 encoder.append(nn.LeakyReLU(0.2, inplace=True),)
         self.encoder = nn.Sequential(*encoder)

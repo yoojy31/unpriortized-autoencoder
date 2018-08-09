@@ -2,13 +2,12 @@ from struct import unpack
 import numpy as np
 import scipy.misc
 import torch
-import utils
 from .__dataset__ import ImgDataset
 
 class MNIST(ImgDataset):
 
     def __init__(self, args, dataset_path):
-        self.img_size = (args.img_h, args.img_w)
+        self.img_size = (args.img_size, args.img_size)
         self.code_size = args.code_size
 
         img_file_path = dataset_path

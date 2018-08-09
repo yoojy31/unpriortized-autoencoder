@@ -6,12 +6,11 @@ class BasicDecoder00(nn.Module):
 
     def __init__(self, args):
         super(BasicDecoder00, self).__init__()
-        self.img_h = args.img_h
-        self.img_w = args.img_w
+        self.img_size = args.img_size
         self.img_ch = args.img_ch
         self.code_size = args.code_size
 
-        num_blocks = int(np.log2(np.min((self.img_h, self.img_w)))) - 1
+        num_blocks = int(np.log2(np.min((self.img_size, self.img_size)))) - 1
         nfs = (2048, 1024, 512, 256, 128)
         nfs = (self.code_size,) + nfs[len(nfs)-(num_blocks-1):] + (self.img_ch,)
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 # test
 
-RESULT_DIR=./result/celeb-32x32/lae-64/basics02-basics00-`date "+%Y%m%d-%H%M%S"`
+RESULT_DIR=./result/celeb-32x32/lae-64/size-test-`date "+%Y%m%d-%H%M%S"`
 
 mkdir $RESULT_DIR
 mkdir $RESULT_DIR/copy
@@ -28,8 +28,7 @@ python3 ./src/train_ae.py \
 --beta1=0.9 \
 \
 --batch_size=128 \
---img_h=32 \
---img_w=32 \
+--img_size=28 \
 --img_ch=3 \
 --code_size=64 \
 --num_bin=100 \

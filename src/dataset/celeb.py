@@ -2,13 +2,12 @@ import os
 import numpy as np
 import scipy.misc
 import torch
-import utils
 from .__dataset__ import ImgDataset
 
 class Celeb(ImgDataset):
 
     def __init__(self, args, dataset_path):
-        self.img_size = (args.img_h, args.img_w)
+        self.img_size = (args.img_size, args.img_size)
         self.dataset_root = dataset_path
         self.img_names = os.listdir(dataset_path)
         self.num_imgs = len(self.img_names)
