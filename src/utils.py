@@ -32,10 +32,10 @@ def forward_masked_z(decoder, z):
         z_elmt = m_elmt * z
         z_accum = m_accum * z
 
-        _x_elmt = decoder(z_elmt)
-        _x_accum = decoder(z_accum)
-        _x_elmt.append(_x_elmt)
-        _x_accum.append(_x_accum)
+        _x_elmt_i = decoder(z_elmt)
+        _x_accum_i = decoder(z_accum)
+        _x_elmt.append(_x_elmt_i)
+        _x_accum.append(_x_accum_i)
 
     _x_elmt = torch.cat(_x_elmt, dim=0)
     _x_accum = torch.cat(_x_accum, dim=0)
