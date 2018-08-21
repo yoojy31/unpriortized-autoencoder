@@ -2,12 +2,12 @@ import torch
 import torch.nn as nn
 from .basics import BasicEncoder00
 
-class ARMLPEncoder00(BasicEncoder00):
+class LatentAREncoder00(BasicEncoder00):
     # mlp based auto-regressive encoder
     # back-prop all
 
     def __init__(self, args):
-        super(ARMLPEncoder00, self).__init__(args)
+        super(LatentAREncoder00, self).__init__(args)
 
         self.ar_mlp = nn.Sequential(
             nn.Linear(self.code_size * 3, self.code_size * 2, bias=False),
@@ -35,22 +35,73 @@ class ARMLPEncoder00(BasicEncoder00):
         h = torch.squeeze(h)
 
         batch_size = h.size()[0]
-        z = torch.zeros((batch_size, self.code_size)).cuda()
+        z1 = torch.zeros((batch_size, self.code_size)).cuda()
         m = torch.zeros((batch_size, self.code_size)).cuda()
 
         for i in range(self.code_size):
             m[:, :i] = 1
 
-            h_i = torch.cat((h, z, m), dim=1)
-            z_i = self.ar_mlp(h_i)
-            z[:, i:i+1] += z_i
+            h_i = torch.cat((h, z1, m), dim=1)
+            z1_i = self.ar_mlp(h_i)
+            z1[:, i:i+1] += z1_i
 
-        z = torch.clamp(z, min=-1, max=1)
-        z = torch.reshape(z, (batch_size, self.code_size, 1, 1))
-        return z
+        z1 = torch.clamp(z1, min=-1, max=1)
+        z2 = torch.reshape(z1, (batch_size, self.code_size, 1, 1))
+        return z1, z2
 
-class ARMLPEncoder01(ARMLPEncoder00):
+class LatentAREncoder01(LatentAREncoder00):
     # back-prop first
+
+    def forward(self, *x):
+        h = self.encoder.forward(x[0])
+        h = torch.squeeze(h)
+
+        batch_size = h.size()[0]
+        z1 = torch.zeros((batch_size, self.code_size)).cuda()
+        m = torch.zeros((batch_size, self.code_size)).cuda()
+
+        for i in range(self.code_size):
+            m[:, :i] = 1
+
+            if i == 0:
+                h_i = torch.cat((h, z1.detach(), m.detach()), dim=1)
+            else:
+                h_i = torch.cat((h.detach(), z1, m.detach()), dim=1)
+            z1_i = self.ar_mlp(h_i)
+            z1[:, i:i+1] += z1_i
+
+        z2 = torch.clamp(z1, min=-1, max=1)
+        z2 = torch.reshape(z2, (batch_size, self.code_size, 1, 1))
+        return z1, z2
+
+class LatentAREncoder02(LatentAREncoder00):
+    # back-prop first, apply clamp each element
+
+    def forward(self, *x):
+        h = self.encoder.forward(x[0])
+        h = torch.squeeze(h)
+
+        batch_size = h.size()[0]
+        z1 = torch.zeros((batch_size, self.code_size)).cuda()
+        z2 = torch.zeros((batch_size, self.code_size)).cuda()
+        m = torch.zeros((batch_size, self.code_size)).cuda()
+
+        for i in range(self.code_size):
+            m[:, :i] = 1
+
+            if i == 0:
+                h_i = torch.cat((h, z2.detach(), m.detach()), dim=1)
+            else:
+                h_i = torch.cat((h.detach(), z1, m.detach()), dim=1)
+            z1_i = self.ar_mlp(h_i)
+            z1[:, i:i+1] += z1_i
+            z2[:, i:i+1] += torch.clamp(z1_i, min=-1, max=1)
+
+        z2 = torch.reshape(z2, (batch_size, self.code_size, 1, 1))
+        return z1, z2
+
+class LatentAREncoder03(LatentAREncoder00):
+    # back-prop all, tanh
 
     def forward(self, *x):
         h = self.encoder.forward(x[0])
@@ -63,18 +114,15 @@ class ARMLPEncoder01(ARMLPEncoder00):
         for i in range(self.code_size):
             m[:, :i] = 1
 
-            if i == 0:
-                h_i = torch.cat((h, z, m), dim=1)
-            else:
-                h_i = torch.cat((h.detach(), z, m), dim=1)
+            h_i = torch.cat((h, z, m), dim=1)
             z_i = self.ar_mlp(h_i)
             z[:, i:i+1] += z_i
 
-        z = torch.clamp(z, min=-1, max=1)
+        z = nn.functional.tanh(z)
         z = torch.reshape(z, (batch_size, self.code_size, 1, 1))
         return z
 
-class ARMLPEncoder10(ARMLPEncoder00):
+class LatentAREncoder10(LatentAREncoder00):
     # back-prop all
 
     def forward(self, *x):
@@ -101,7 +149,7 @@ class ARMLPEncoder10(ARMLPEncoder00):
         z = torch.reshape(z, (batch_size, self.code_size, 1, 1))
         return z
 
-class ARMLPEncoder11(ARMLPEncoder00):
+class LatentAREncoder11(LatentAREncoder00):
     # back-prop first
 
     def forward(self, *x):

@@ -48,7 +48,8 @@ class MNIST(ImgDataset):
     def __getitem__(self, idx):
         x = self.preprocessing(self.img_list[idx])
         y = self.lab_list[idx]
-        return {'x': x, 'y': y}
+        s = torch.zeros(self.code_size, 1, 1)
+        return {'x': x, 'y': y, 's': s}
 
     def preprocessing(self, x):
         if self.img_size is not None:
@@ -62,6 +63,7 @@ class MNIST(ImgDataset):
         return x
 
     def inv_preprocessing(self, x):
+        x = torch.clamp(x, min=-1, max=1)
         x = x.cpu().detach().numpy()
         x = np.transpose(x, (1, 2, 0))
         x = np.squeeze(x)

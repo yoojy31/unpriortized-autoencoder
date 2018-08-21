@@ -23,18 +23,19 @@ class BasicAETrainer0(Trainer):
     def forward(self, batch_dict, requires_grad):
         assert 'x' in batch_dict.keys()
 
-        x = batch_dict['x'].cuda().cuda()
+        x = batch_dict['x'].cuda()
         x.requires_grad_(requires_grad)
 
-        z = self.encoder(x)
-        _x = self.decoder(z)
-        return x, z, _x
+        z1, z2 = self.encoder(x)
+        _x = self.decoder(z2)
+        # print(z.shape)
+        return x, z1, z2, _x
 
     def step(self, batch_dict, update):
         self.encoder.train(update)
         self.decoder.train(update)
 
-        x, z, _x = self.forward(batch_dict, update)
+        x, z1, z2, _x = self.forward(batch_dict, update)
         l_mse = nn.functional.mse_loss(_x, x)
 
         if update:
@@ -42,7 +43,7 @@ class BasicAETrainer0(Trainer):
             l_mse.backward()
             self.optim.step()
             self.global_step += 1
-        return x, z, _x, l_mse
+        return x, z1, z2, _x, l_mse
 
     def train(self, train_set_loader, valid_set_loader,
               start_epoch, finish_epoch, valid_intv=10):
@@ -68,7 +69,7 @@ class BasicAETrainer0(Trainer):
                 except StopIteration:
                     print('Training set: stop iteration\n')
 
-                train_time, (_, _, _, l_mse) = timer(self.step, batch_dict, True)
+                train_time, (_, _, _, _, l_mse) = timer(self.step, batch_dict, True)
                 l_mse = l_mse.item()
 
                 value_dict = OrderedDict()
@@ -84,16 +85,15 @@ class BasicAETrainer0(Trainer):
                         valid_set_iter = iter(valid_set_loader)
                         batch_dict = next(valid_set_iter)
 
-                    _, z, _, l_mse = self.step(batch_dict, False)
-                    z = z.cpu().detach().numpy()
+                    _, z1, z2, _, l_mse = self.step(batch_dict, False)
+                    z1 = z1.cpu().detach().numpy()
+                    z2 = z2.cpu().detach().numpy()
                     l_mse = l_mse.item()
 
                     value_dict['l_mse (valid)'] = l_mse
                     valid_log_writer.add_scalar('l_mse', l_mse, self.global_step)
-                    valid_log_writer.add_histogram('z', z, self.global_step)
-                    valid_log_writer.add_histogram('z_0', z[:, 0], self.global_step)
-                    valid_log_writer.add_histogram('z_n', z[:, -1], self.global_step)
-
+                    valid_log_writer.add_histogram('z1', z1, self.global_step)
+                    valid_log_writer.add_histogram('z2', z2, self.global_step)
                 yield value_dict
 
         train_log_writer.close()
@@ -101,7 +101,8 @@ class BasicAETrainer0(Trainer):
 
     def use_cuda(self, cur_devise):
         torch.cuda.set_device(cur_devise)
-        # when encoder and decoder is data paraller, what devise is current devise?
+        # when encoder and decoder is data paraller,
+        # what devise is current devise?
         self.encoder.cuda()
         self.decoder.cuda()
         self.is_cuda = True
@@ -127,9 +128,9 @@ class BasicAETrainer0(Trainer):
         self.decoder.load_state_dict(torch.load(pathes[1]))
         self.optim.load_state_dict(torch.load(pathes[2]))
 
-        if learning_rate is not None:
+        '''if learning_rate is not None:
             for param_group in self.optim.param_groups:
-                param_group['lr'] = learning_rate
+                param_group['lr'] = learning_rate'''
 
     @classmethod
     def join_path(cls, _dir):

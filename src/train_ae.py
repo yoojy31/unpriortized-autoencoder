@@ -65,9 +65,9 @@ def main():
     trainer_class = options.trainer_dict[args.trainer]
     trainer = trainer_class(**trainer_arg_dict)
 
+    trainer.use_cuda(args.cur_device)
     if args.snapshot_dir is not None:
         trainer.load_snapshot(args.snapshot_dir)
-    trainer.use_cuda(args.cur_device)
 
     # Training
     num_batch = train_set_loader.__len__()
@@ -88,26 +88,27 @@ def main():
             print('')
 
         if trainer.global_step % num_batch == 0:
-            # save images
-            trainer.encoder.train(False)
-            trainer.decoder.train(False)
-            x, z, _x = trainer.forward(infer_batch_dict, False)
-            _x_elmt, _x_accum = utils.forward_masked_z(trainer.decoder, z[0:1])
-
-            save_img_dir = os.path.join(img_dir, 'epoch-%03d' % epoch)
-            elmt_img_dir = os.path.join(save_img_dir, '000-_x_mask')
-
-            utils.save_img_batch(save_img_dir, x, valid_dataset.inv_preprocessing, 'x')
-            utils.save_img_batch(save_img_dir, _x, valid_dataset.inv_preprocessing, '_x')
-            utils.save_img_batch(elmt_img_dir, _x_elmt, valid_dataset.inv_preprocessing, '_x_elmt')
-            utils.save_img_batch(elmt_img_dir, _x_accum, valid_dataset.inv_preprocessing, '_x_accum')
-            print('< Save image batch: %s >\n' % save_img_dir)
-
             # decay learning rate
             if epoch != args.start_epoch and epoch % args.lr_decay_intv == 0:
                 new_lr = trainer.decay_lr(args.lr_decay_rate)
                 print('< Decay learning rate: %f --> %f >\n' %
                       (new_lr/args.lr_decay_rate, new_lr))
+
+            # save images
+            trainer.encoder.train(False)
+            trainer.decoder.train(False)
+            x, _, z2, _x = trainer.forward(infer_batch_dict, False)
+            _x_elmt, _x_accum = utils.forward_masked_z(trainer.decoder, z2[0:1])
+
+            save_img_dir = os.path.join(img_dir, 'epoch-%03d' % epoch)
+            elmt_img_dir = os.path.join(save_img_dir, '000-_x_elmt')
+            accum_img_dir = os.path.join(save_img_dir, '000-_x_accum')
+
+            utils.save_img_batch(save_img_dir, x, valid_dataset.inv_preprocessing, 'x')
+            utils.save_img_batch(save_img_dir, _x, valid_dataset.inv_preprocessing, '_x')
+            utils.save_img_batch(elmt_img_dir, _x_elmt, valid_dataset.inv_preprocessing, '_x_elmt')
+            utils.save_img_batch(accum_img_dir, _x_accum, valid_dataset.inv_preprocessing, '_x_accum')
+            print('< Save image batch: %s >\n' % save_img_dir)
 
             # save snapshot
             if epoch != args.start_epoch and epoch % args.snapshot_intv == 0:

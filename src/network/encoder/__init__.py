@@ -1,2 +1,2 @@
-from .basics import BasicEncoder00, BasicEncoder01, BasicEncoder02
-from .ar_mlp import ARMLPEncoder00, ARMLPEncoder01, ARMLPEncoder10, ARMLPEncoder11
+from .basics import BasicEncoder00, LimitedEncoder00, LimitedEncoder01
+from .latent_ar import LatentAREncoder00, LatentAREncoder01, LatentAREncoder02, LatentAREncoder10, LatentAREncoder11

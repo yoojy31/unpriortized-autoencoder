@@ -47,20 +47,20 @@ class BasicEncoder00(nn.Module):
 
     def forward(self, *x):
         z = self.encoder.forward(x[0])
-        return z
+        return z, z
 
-class BasicEncoder01(BasicEncoder00):
-    # Basic encoder network + tanh
-
-    def forward(self, *x):
-        z = self.encoder.forward(x[0])
-        z = nn.functional.tanh(z)
-        return z
-
-class BasicEncoder02(BasicEncoder00):
+class LimitedEncoder00(BasicEncoder00):
     # Basic encoder network + ramp
 
     def forward(self, *x):
-        z = self.encoder.forward(x[0])
-        z = torch.clamp(z, min=-1, max=1)
-        return z
+        z1 = self.encoder.forward(x[0])
+        z2 = torch.clamp(z1, min=-1, max=1)
+        return z1, z2
+
+class LimitedEncoder01(BasicEncoder00):
+    # Basic encoder network + tanh
+
+    def forward(self, *x):
+        z1 = self.encoder.forward(x[0])
+        z2 = nn.functional.tanh(z1)
+        return z1, z2

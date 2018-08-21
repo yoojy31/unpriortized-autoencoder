@@ -5,13 +5,15 @@ import trainer
 
 encoder_dict = {
     'basics00': network.encoder.BasicEncoder00,
-    'basics01': network.encoder.BasicEncoder01,
-    'basics02': network.encoder.BasicEncoder02,
 
-    'ar_mlp00': network.encoder.ARMLPEncoder00,
-    'ar_mlp01': network.encoder.ARMLPEncoder01,
-    'ar_mlp10': network.encoder.ARMLPEncoder10,
-    'ar_mlp11': network.encoder.ARMLPEncoder11,
+    'limited00': network.encoder.LimitedEncoder00,
+    'limited01': network.encoder.LimitedEncoder01,
+
+    'latent_ar00': network.encoder.LatentAREncoder00,
+    'latent_ar01': network.encoder.LatentAREncoder01,
+    'latent_ar02': network.encoder.LatentAREncoder02,
+    'latent_ar10': network.encoder.LatentAREncoder10,
+    'latent_ar11': network.encoder.LatentAREncoder11,
 
     'none': None,
     None: None,
@@ -24,6 +26,24 @@ decoder_dict = {
 }
 
 sampler_dict = {
+    # 5 layer, without batch norm, bias=False
+    'ar00': network.sampler.ARSampler00,
+    # 5 layer, with batch norm affine=True, bias=False
+    'ar01': network.sampler.ARSampler01,
+    # 5 layer, with batch norm affine=False, bias=False
+    'ar02': network.sampler.ARSampler01,
+
+    # 10 layer, without bath norm, bias=False
+    'ar10': network.sampler.ARSampler10,
+
+    # hierarchical architecture, 3 layer each
+    'hier00': network.sampler.HierarchicalSampler00,
+    # hierarchical architecture, 6 layer each
+    'hier10': network.sampler.HierarchicalSampler10,
+    # hierarchical architecture, 6 layer each
+    # batch norm affine=True train=True
+    'hier11': network.sampler.HierarchicalSampler11,
+
     'none': None,
     None: None,
 }
@@ -42,6 +62,7 @@ dataset_dict = {
 
 trainer_dict = {
     'basics_ae0': trainer.ae.BasicAETrainer0,
+    'basics_sampler0': trainer.sampler.BasicSamplerTrainer0,
     'none': None,
     None: None,
 }
