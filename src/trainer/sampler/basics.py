@@ -41,7 +41,8 @@ class BasicSamplerTrainer0(Trainer):
 
         for i in range(self.code_size):
             m[:, :i] = 1
-            p_i = self.sampler.forward(torch.cat((s, m), dim=1).detach(), i)
+            o_i = self.sampler.forward(torch.cat((s, m), dim=1).detach(), i)
+            p_i = nn.functional.softmax(o_i)
             s_i = self.sampler.sample_z_1(p_i)
             s[:, i:i+1] = s_i
         # s = torch.reshape(s, (-1, self.code_size, 1, 1))
@@ -55,13 +56,9 @@ class BasicSamplerTrainer0(Trainer):
         s = batch_dict['s']
         m = torch.zeros(s.size())
 
-        x.requires_grad_(False)
-        s.requires_grad_(update)
-        m.requires_grad_(update)
-
-        x = x.cuda()
-        s = s.cuda()
-        m = m.cuda()
+        x = x.requires_grad_(False).cuda()
+        s = s.requires_grad_(update).cuda()
+        m = m.requires_grad_(update).cuda()
 
         _, z = self.encoder.forward(x)
         z_lab = torch.squeeze(((z.detach() + 1) / self.bin_size).long())
@@ -70,8 +67,8 @@ class BasicSamplerTrainer0(Trainer):
         l_ce = 0
         for i in range(self.code_size):
             m[:, :i] = 1
-            p_i = self.sampler.forward(torch.cat((s, m), dim=1).detach(), i)
-            l_ce += nn.functional.cross_entropy(p_i, z_lab[:, i])
+            o_i = self.sampler.forward(torch.cat((s, m), dim=1).detach(), i)
+            l_ce += nn.functional.cross_entropy(o_i, z_lab[:, i])
             s[:, i] = z[:, i]
         l_ce /= self.code_size
 
@@ -125,17 +122,22 @@ class BasicSamplerTrainer0(Trainer):
                     z, l_ce = self.step(batch_dict, False)
                     s = self.forward(batch_dict, False)
 
-                    z_lab = torch.squeeze(((z.detach() + 1) / self.bin_size).long())
-                    z_lab = z_lab.cpu().detach().numpy()
+                    # z_lab = torch.squeeze(((z.detach() + 1) / self.bin_size).long())
+                    # s_lab = torch.squeeze(((s.detach() + 1) / self.bin_size).long())
+                    # z_lab = torch.clamp(z_lab, min=0, max=self.num_bin-1)
+                    # s_lab = torch.clamp(s_lab, min=0, max=self.num_bin-1)
                     z = z.cpu().detach().numpy()
                     s = s.cpu().detach().numpy()
                     l_ce = l_ce.item()
 
                     value_dict['l_ce (valid)'] = l_ce
                     valid_log_writer.add_scalar('l_ce', l_ce, self.global_step)
-                    valid_log_writer.add_histogram('z_lab', z_lab, self.global_step)
-                    valid_log_writer.add_histogram('z', z, self.global_step)
-                    valid_log_writer.add_histogram('s', s, self.global_step)
+                    valid_log_writer.add_histogram('z_0.0', z[:, 0], self.global_step)
+                    valid_log_writer.add_histogram('z_0.5', z[:, int(self.code_size/2)], self.global_step)
+                    valid_log_writer.add_histogram('z_1.0', z[:, self.code_size-1], self.global_step)
+                    valid_log_writer.add_histogram('s_0.0', s[:, 0], self.global_step)
+                    valid_log_writer.add_histogram('s_0.5', s[:, int(self.code_size/2)], self.global_step)
+                    valid_log_writer.add_histogram('s_1.0', s[:, self.code_size-1], self.global_step)
                 yield value_dict
 
         train_log_writer.close()
@@ -196,3 +198,72 @@ class BasicSamplerTrainer0(Trainer):
         sampler_path = os.path.join(directory, 'sampler.pth')
         optim_path = os.path.join(directory, 'optim.pth')
         return encoder_path, decoder_path, sampler_path, optim_path
+
+class BasicSamplerTrainer1(BasicSamplerTrainer0):
+    def forward(self, batch_dict, requires_grad):
+        assert 's' in batch_dict.keys()
+
+        batch_size = batch_dict['s'].size()[0]
+        s = torch.zeros(
+            (batch_size, 1, self.code_size * 2),
+            requires_grad=requires_grad).cuda()
+        m = torch.zeros(
+            (batch_size, 1, self.code_size * 2),
+            requires_grad=requires_grad).cuda()
+        m[:, 0, self.code_size:] = 1
+
+        for i in range(self.code_size):
+            j = i + self.code_size
+
+            m_i = m[:, 0:1, i:j]
+            s_i = s[:, 0:1, i:j]
+            f_i = torch.cat((s_i, m_i), dim=1).detach()
+
+            p_i = self.sampler.forward(f_i, i)
+            s_i = self.sampler.sample_z_1(p_i)
+            s[:, 0, j] += s_i[:, 0, 0, 0]
+        s = s[:, :, self.code_size:]
+        s = torch.reshape(s, (batch_size, self.code_size, 1, 1))
+        return s
+
+    def step(self, batch_dict, update):
+        self.encoder.train(False)
+        self.sampler.train(update)
+
+        x = batch_dict['x']
+        x = x.requires_grad_(False).cuda()
+
+        batch_size = x.size()[0]
+        s = torch.zeros(
+            (batch_size, 1, self.code_size * 2),
+            requires_grad=update).cuda()
+        m = torch.zeros(
+            (batch_size, 1, self.code_size * 2),
+            requires_grad=update).cuda()
+        m[:, 0, self.code_size:] = 1
+
+        _, z = self.encoder.forward(x)
+        z_lab = torch.squeeze(((z.detach() + 1) / self.bin_size).long())
+        z_lab = torch.clamp(z_lab, min=0, max=self.num_bin-1)
+
+        l_ce = 0
+        for i in range(self.code_size):
+            j = i + self.code_size
+
+            m_i = m[:, 0:1, i:j]
+            s_i = s[:, 0:1, i:j]
+            f_i = torch.cat((s_i, m_i), dim=1).detach()
+
+            p_i = self.sampler.forward(f_i, i)
+            l_ce += nn.functional.cross_entropy(p_i, z_lab[:, i])
+            # print(s.size())
+            # print(z.size())
+            s[:, 0, j] = z[:, i, 0, 0]
+        l_ce /= self.code_size
+
+        if update:
+            self.optim.zero_grad()
+            l_ce.backward()
+            self.optim.step()
+            self.global_step += 1
+        return z, l_ce

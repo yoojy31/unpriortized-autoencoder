@@ -1,1 +1,1 @@
-from .basics import BasicSamplerTrainer0
+from .basics import BasicSamplerTrainer0, BasicSamplerTrainer1

@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 from .__sampler__ import Sampler
@@ -146,3 +147,36 @@ class ARSampler10(ARSampler00):
                 m.weight.data.normal_(0.0, 0.02)
                 if m.bias is not None:
                     m.bias.data.zero_()
+
+class ARSampler20(Sampler):
+    # sliding window, using conv
+
+    def __init__(self, args):
+        super(ARSampler20, self).__init__(args)
+        num_blocks = int(np.log2(self.code_size))
+
+        self.ar_mlp = list()
+        for i in range(num_blocks):
+            if i == 0:
+                self.ar_mlp.append(nn.Conv1d(2, 64, 4, 2, padding=1, bias=True))
+                self.ar_mlp.append(nn.LeakyReLU(0.2))
+            elif i == (num_blocks - 1):
+                self.ar_mlp.append(nn.Conv1d(64, self.num_bin, 4, 2, padding=1,  bias=True))
+            else:
+                self.ar_mlp.append(nn.Conv1d(64, 64, 4, 2, padding=1, bias=True))
+                self.ar_mlp.append(nn.BatchNorm1d(64, affine=True))
+                self.ar_mlp.append(nn.LeakyReLU(0.2))
+        self.ar_mlp = nn.Sequential(*self.ar_mlp)
+
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                m.weight.data.normal_(0.0, 0.02)
+                if m.bias is not None:
+                    m.bias.data.zero_()
+
+    def forward(self, *x):
+        self.train(mode=True)
+        o = self.ar_mlp.forward(x[0])
+        o = torch.squeeze(o)
+        p = nn.functional.softmax(o, dim=1)
+        return p
