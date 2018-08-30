@@ -267,3 +267,52 @@ class LatentAREncoder21(LatentAREncoder20):
         z2 = torch.clamp(z1, min=-1, max=1)
         z2 = torch.reshape(z2, (batch_size, self.code_size, 1, 1))
         return z1, z2
+
+class LatentAREncoder30(LatentAREncoder20):
+    # backward-all, satlins, fixed pos, using conv, pass element (scalar) of encoder's output
+
+    def __init__(self, args):
+        super(LatentAREncoder30, self).__init__(args)
+        num_blocks = int(np.log2(self.code_size))
+
+        self.ar_conv = list()
+        for i in range(num_blocks):
+            if i == 0:
+                self.ar_conv.append(nn.Conv1d(2, 64, 4, 2, padding=1, bias=True))
+                self.ar_conv.append(nn.LeakyReLU(0.2))
+            elif i == (num_blocks - 1):
+                self.ar_conv.append(nn.Conv1d(64, 1, 4, 2, padding=1,  bias=True))
+            else:
+                self.ar_conv.append(nn.Conv1d(64, 64, 4, 2, padding=1, bias=True))
+                # self.ar_mlp.append(nn.BatchNorm1d(64, affine=True))
+                self.ar_conv.append(nn.LeakyReLU(0.2))
+        self.ar_conv = nn.Sequential(*self.ar_conv)
+
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                m.weight.data.normal_(0.0, 0.02)
+                if m.bias is not None:
+                    m.bias.data.zero_()
+
+    def forward(self, *x):
+        # self.train(mode=True)
+        batch_size = x[0].size()[0]
+
+        h = self.encoder.forward(x[0])
+        h = torch.squeeze(h)
+        h = torch.reshape(h, (batch_size, 1, self.code_size))
+
+        z1 = torch.zeros((batch_size, 1, self.code_size)).cuda()
+        m = torch.zeros((batch_size, 1, self.code_size + 1)).cuda()
+
+        for i in range(self.code_size):
+            m[:, 0:1, :i+1] = 1
+            h_i = h[:, 0:1, i:i+1]
+
+            f_i = torch.cat((torch.cat((h_i, z1), dim=2), m), dim=1)
+            z1_i = self.ar_conv(f_i)
+            z1[:, 0:1, i:i+1] += z1_i
+
+        z2 = torch.clamp(z1, min=-1, max=1)
+        z2 = torch.reshape(z2, (batch_size, self.code_size, 1, 1))
+        return z1, z2

@@ -9,6 +9,7 @@ from utils import timer
 from ..__trainer__ import Trainer
 
 class BasicSamplerTrainer0(Trainer):
+    # mlp sampler trainer
 
     def __init__(self, encoder, decoder, sampler, optim, log_dir):
         super(BasicSamplerTrainer0, self).__init__()
@@ -42,7 +43,7 @@ class BasicSamplerTrainer0(Trainer):
         for i in range(self.code_size):
             m[:, :i] = 1
             o_i = self.sampler.forward(torch.cat((s, m), dim=1).detach(), i)
-            p_i = nn.functional.softmax(o_i)
+            p_i = nn.functional.softmax(o_i, dim=1)
             s_i = self.sampler.sample_z_1(p_i)
             s[:, i:i+1] = s_i
         # s = torch.reshape(s, (-1, self.code_size, 1, 1))
@@ -200,6 +201,8 @@ class BasicSamplerTrainer0(Trainer):
         return encoder_path, decoder_path, sampler_path, optim_path
 
 class BasicSamplerTrainer1(BasicSamplerTrainer0):
+    # conv sampler trainer (sliding window)
+
     def forward(self, batch_dict, requires_grad):
         assert 's' in batch_dict.keys()
 
@@ -219,9 +222,10 @@ class BasicSamplerTrainer1(BasicSamplerTrainer0):
             s_i = s[:, 0:1, i:j]
             f_i = torch.cat((s_i, m_i), dim=1).detach()
 
-            p_i = self.sampler.forward(f_i, i)
+            o_i = self.sampler.forward(f_i, i)
+            p_i = nn.functional.softmax(o_i, dim=1)
             s_i = self.sampler.sample_z_1(p_i)
-            s[:, 0, j] += s_i[:, 0, 0, 0]
+            s[:, 0, j] = s_i[:, 0, 0, 0]
         s = s[:, :, self.code_size:]
         s = torch.reshape(s, (batch_size, self.code_size, 1, 1))
         return s
@@ -254,11 +258,70 @@ class BasicSamplerTrainer1(BasicSamplerTrainer0):
             s_i = s[:, 0:1, i:j]
             f_i = torch.cat((s_i, m_i), dim=1).detach()
 
-            p_i = self.sampler.forward(f_i, i)
-            l_ce += nn.functional.cross_entropy(p_i, z_lab[:, i])
-            # print(s.size())
-            # print(z.size())
-            s[:, 0, j] = z[:, i, 0, 0]
+            o_i = self.sampler.forward(f_i, i)
+            l_ce += nn.functional.cross_entropy(o_i, z_lab[:, i])
+            s[:, 0, j] += z[:, i, 0, 0]
+        l_ce /= self.code_size
+
+        if update:
+            self.optim.zero_grad()
+            l_ce.backward()
+            self.optim.step()
+            self.global_step += 1
+        return z, l_ce
+
+class BasicSamplerTrainer2(BasicSamplerTrainer0):
+    # conv sampler trainer (fixed position)
+
+    def forward(self, batch_dict, requires_grad):
+        assert 's' in batch_dict.keys()
+
+        batch_size = batch_dict['s'].size()[0]
+        s = torch.zeros(
+            (batch_size, 1, self.code_size),
+            requires_grad=requires_grad).cuda()
+        m = torch.zeros(
+            (batch_size, 1, self.code_size),
+            requires_grad=requires_grad).cuda()
+
+        for i in range(self.code_size):
+            m[:, 0:1, :i] = 1
+            f_i = torch.cat((s, m), dim=1).detach()
+
+            o_i = self.sampler.forward(f_i, i)
+            p_i = nn.functional.softmax(o_i, dim=1)
+            s_i = self.sampler.sample_z_1(p_i)
+            s[:, 0, i] = s_i[:, 0, 0, 0]
+        s = torch.reshape(s, (batch_size, self.code_size, 1, 1))
+        return s
+
+    def step(self, batch_dict, update):
+        self.encoder.train(False)
+        self.sampler.train(update)
+
+        x = batch_dict['x']
+        x = x.requires_grad_(False).cuda()
+
+        batch_size = x.size()[0]
+        s = torch.zeros(
+            (batch_size, 1, self.code_size),
+            requires_grad=update).cuda()
+        m = torch.zeros(
+            (batch_size, 1, self.code_size),
+            requires_grad=update).cuda()
+
+        _, z = self.encoder.forward(x)
+        z_lab = torch.squeeze(((z.detach() + 1) / self.bin_size).long())
+        z_lab = torch.clamp(z_lab, min=0, max=self.num_bin-1)
+
+        l_ce = 0
+        for i in range(self.code_size):
+            m[:, 0:1, :i] = 1
+            f_i = torch.cat((s, m), dim=1).detach()
+
+            o_i = self.sampler.forward(f_i, i)
+            l_ce += nn.functional.cross_entropy(o_i, z_lab[:, i])
+            s[:, 0, i] += z[:, i, 0, 0]
         l_ce /= self.code_size
 
         if update:

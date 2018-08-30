@@ -1,7 +1,7 @@
 #!/bin/bash
 
-RESULT_DIR=./result/celeba-32x32/32/sampler/hier/hier20-larlae-hier00-`date "+%Y%m%d-%H%M%S"`
-SNAPSHOT_DIR=./result/celeba-32x32/32/larlae/larlae-hier00-20180824-170939/snapshot/epoch-080
+RESULT_DIR=./result/celeba-32x32/32/sampler/ar/ar20-fixed-pos-lae-limited00-mask-`date "+%Y%m%d-%H%M%S"`
+SNAPSHOT_DIR=./result/celeba-32x32/32/lae/lae-satlins-mask-20180826-035631/snapshot/epoch-120
 
 mkdir $RESULT_DIR
 mkdir $RESULT_DIR/copy
@@ -9,18 +9,18 @@ cp -r src $RESULT_DIR/copy
 cp train_sampler.sh $RESULT_DIR/copy
 
 python3 ./src/train_sampler.py \
---cur_device=0 \
+--cur_device=1 \
 \
---encoder=latent_hier00 \
+--encoder=limited00 \
 --decoder=basics00 \
---sampler=hier20 \
+--sampler=ar20 \
 --discrim=none \
 \
 --dataset=celeb \
 --train_set_path=./data/celeba/align-crop-128/train-valid \
 --valid_set_path=./data/celeba/align-crop-128/test \
 \
---trainer=basics_sampler0 \
+--trainer=basics_sampler2 \
 --start_epoch=0 \
 --finish_epoch=100 \
 --lr=1e-3 \

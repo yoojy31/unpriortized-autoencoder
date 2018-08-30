@@ -18,6 +18,8 @@ encoder_dict = {
     'latent_ar20': network.encoder.LatentAREncoder20,
     'latent_ar21': network.encoder.LatentAREncoder21,
 
+    'latent_ar30': network.encoder.LatentAREncoder30,
+
     'latent_hier00': network.encoder.LatentHierarchicalEncoder00,
 
     'none': None,
@@ -41,7 +43,7 @@ sampler_dict = {
     # 10 layer, without bath norm, bias=False
     'ar10': network.sampler.ARSampler10,
 
-    # sliding window version
+    # conv architecture, sliding window (with basic-trainer1)
     'ar20': network.sampler.ARSampler20,
 
     # hierarchical architecture, 3 layer each
@@ -52,7 +54,7 @@ sampler_dict = {
     # batch norm affine=True train=True
     'hier11': network.sampler.HierarchicalSampler11,
 
-    # parameter efficient architecture
+    # parameter efficient hierarchical architecture
     'hier20': network.sampler.HierarchicalSampler20,
 
     'none': None,
@@ -75,8 +77,12 @@ trainer_dict = {
     'basics_ae0': trainer.ae.BasicAETrainer0,
     'mask_ae0': trainer.ae.MaskAETrainer0,
 
+    # mlp sampler trainer
     'basics_sampler0': trainer.sampler.BasicSamplerTrainer0,
+    # conv sampler trainer (sliding window)
     'basics_sampler1': trainer.sampler.BasicSamplerTrainer1,
+    # conv sampler trainer (fixed position)
+    'basics_sampler2': trainer.sampler.BasicSamplerTrainer2,
 
     'none': None,
     None: None,

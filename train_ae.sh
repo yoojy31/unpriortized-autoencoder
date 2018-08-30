@@ -1,6 +1,6 @@
 #!/bin/bash
 
-RESULT_DIR=./result/celeba-32x32/32/lae/lae-limited00-`date "+%Y%m%d-%H%M%S"`
+RESULT_DIR=./result/celeba-32x32/32/larlae/larlae-ar30-`date "+%Y%m%d-%H%M%S"`
 # SNAPSHOT_DIR=result/celeba-32x32/32/lae/lae-satlins-0.0010-20180812-162033/snapshot/epoch-120
 
 mkdir $RESULT_DIR
@@ -11,7 +11,7 @@ cp train_ae.sh $RESULT_DIR/copy
 python3 ./src/train_ae.py \
 --cur_device=1 \
 \
---encoder=limited00 \
+--encoder=latent_ar30 \
 --decoder=basics00 \
 --discrim=none \
 \
@@ -19,7 +19,7 @@ python3 ./src/train_ae.py \
 --train_set_path=./data/celeba/align-crop-128/train-valid \
 --valid_set_path=./data/celeba/align-crop-128/test \
 \
---trainer=mask_ae0 \
+--trainer=basics_ae0 \
 --start_epoch=0 \
 --finish_epoch=200 \
 --lr=1e-3 \

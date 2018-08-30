@@ -149,24 +149,24 @@ class ARSampler10(ARSampler00):
                     m.bias.data.zero_()
 
 class ARSampler20(Sampler):
-    # sliding window, using conv
+    # conv architecture, sliding window
 
     def __init__(self, args):
         super(ARSampler20, self).__init__(args)
         num_blocks = int(np.log2(self.code_size))
 
-        self.ar_mlp = list()
+        self.ar_conv = list()
         for i in range(num_blocks):
             if i == 0:
-                self.ar_mlp.append(nn.Conv1d(2, 64, 4, 2, padding=1, bias=True))
-                self.ar_mlp.append(nn.LeakyReLU(0.2))
+                self.ar_conv.append(nn.Conv1d(2, 64, 4, 2, padding=1, bias=True))
+                self.ar_conv.append(nn.LeakyReLU(0.2))
             elif i == (num_blocks - 1):
-                self.ar_mlp.append(nn.Conv1d(64, self.num_bin, 4, 2, padding=1,  bias=True))
+                self.ar_conv.append(nn.Conv1d(64, self.num_bin, 4, 2, padding=1,  bias=True))
             else:
-                self.ar_mlp.append(nn.Conv1d(64, 64, 4, 2, padding=1, bias=True))
-                self.ar_mlp.append(nn.BatchNorm1d(64, affine=True))
-                self.ar_mlp.append(nn.LeakyReLU(0.2))
-        self.ar_mlp = nn.Sequential(*self.ar_mlp)
+                self.ar_conv.append(nn.Conv1d(64, 64, 4, 2, padding=1, bias=True))
+                self.ar_conv.append(nn.BatchNorm1d(64, affine=True))
+                self.ar_conv.append(nn.LeakyReLU(0.2))
+        self.ar_conv = nn.Sequential(*self.ar_conv)
 
         for m in self.modules():
             if isinstance(m, nn.Linear):
@@ -176,7 +176,7 @@ class ARSampler20(Sampler):
 
     def forward(self, *x):
         self.train(mode=True)
-        o = self.ar_mlp.forward(x[0])
+        o = self.ar_conv.forward(x[0])
         o = torch.squeeze(o)
-        p = nn.functional.softmax(o, dim=1)
-        return p
+        # p = nn.functional.softmax(o, dim=1)
+        return o
