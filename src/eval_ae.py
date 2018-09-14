@@ -1,7 +1,6 @@
 from tqdm import tqdm
 import torch.nn.functional as F
 
-
 def evalate(autoencoder, data_loader):
     accum_mse_loss = 0
     data_loader_pbar = tqdm(data_loader)
