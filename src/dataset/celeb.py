@@ -8,7 +8,6 @@ class Celeb(ImgDataset):
 
     def __init__(self, args, dataset_path):
         self.img_size = (args.img_size, args.img_size)
-        self.code_size = args.code_size
         self.dataset_root = dataset_path
         self.img_names = os.listdir(dataset_path)
         self.num_imgs = len(self.img_names)
@@ -19,8 +18,7 @@ class Celeb(ImgDataset):
     def __getitem__(self, idx):
         img_path = os.path.join(self.dataset_root, self.img_names[idx])
         x = scipy.misc.imread(img_path, mode='RGB')
-        s = torch.zeros(self.code_size, 1, 1)
-        return {'x': self.preprocessing(x), 's': s}
+        return {'image': self.preprocessing(x)}
 
     def preprocessing(self, x):
         if self.img_size is not None:

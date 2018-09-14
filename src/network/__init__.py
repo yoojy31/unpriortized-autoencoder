@@ -1,1 +1,1 @@
-from . import encoder, decoder, discrim, sampler
+from . import autoencoder, armdn

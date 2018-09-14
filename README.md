@@ -1,2 +1,2 @@
-# autoregressive latent variable model
+# autoregressive mixture density networks
 

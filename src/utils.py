@@ -1,19 +1,49 @@
 import os
-import time
+import sys
+from collections import OrderedDict
 import scipy
 import torch
 
-def timer(f, *args):
-    time1 = time.time()
-    result = f(*args)
-    time2 = time.time()
-    return time2 - time1, result
+def make_dir(dir_path):
+    if not os.path.exists(dir_path):
+        os.mkdir(dir_path)
 
-def save_img_batch(save_dir, img_batch, processing, tag):
-    if not os.path.exists(save_dir):
-        os.mkdir(save_dir)
+def create_result_dir(result_dir):
+    log_dir = os.path.join(result_dir, 'log')
+    result_dir_dict = {
+        'train': os.path.join(log_dir, 'train'),
+        'valid': os.path.join(log_dir, 'valid'),
+        'eval': os.path.join(log_dir, 'eval'),
+        'img': os.path.join(result_dir, 'img'),
+        'snapshot': os.path.join(result_dir, 'snapshot')}
 
-    for i, img in enumerate(img_batch):
+    make_dir(result_dir)
+    make_dir(log_dir)
+    make_dir(result_dir_dict['train'])
+    make_dir(result_dir_dict['valid'])
+    make_dir(result_dir_dict['eval'])
+    make_dir(result_dir_dict['img'])
+    make_dir(result_dir_dict['snapshot'])
+    return result_dir_dict
+
+def print_ordered_dict(ordered_dict, indent='', tag='tag'):
+    dict_dict = OrderedDict()
+    sys.stdout.write(indent + '(%s)' % tag)
+    for key, item in ordered_dict.items():
+        if isinstance(item, dict):
+            dict_dict[key] = item
+        else:
+            sys.stdout.write(', %s: %s' % (key, str(item)))
+    sys.stdout.write('\n')
+
+    for key, item_dict in dict_dict.items():
+        indent_ = indent + '\t'
+        print_ordered_dict(item_dict, indent=indent_, tag=key)
+
+def save_img_batch(save_dir, imgs, processing, tag):
+    make_dir(save_dir)
+
+    for i, img in enumerate(imgs):
         img = processing(img)
         save_data_path = os.path.join(save_dir, '%03d-%s.png' % (i, tag))
         scipy.misc.imsave(save_data_path, img)
