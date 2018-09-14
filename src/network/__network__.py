@@ -22,14 +22,14 @@ class Network(abc.ABC, nn.Module):
                 raise IsADirectoryError(save_dir)
             else:
                 pass
-            file_name = self.__class__.__name__
+            file_name = self.__class__.__name__ + '.pth'
             model_path = os.path.join(save_dir, file_name)
             torch.save(self.state_dict(), model_path)
         else:
             raise FileNotFoundError(save_dir)
 
     def load(self, load_dir):
-        file_name = self.__class__.__name__
+        file_name = self.__class__.__name__ + '.pth'
         model_path = os.path.join(load_dir, file_name)
         if os.path.exists(model_path):
             self.load_state_dict(torch.load(model_path))

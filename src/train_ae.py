@@ -34,10 +34,10 @@ def train():
 
     train_data_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size,
-        shuffle=True, num_workers=4)
+        shuffle=True, num_workers=8)
     valid_data_loader = torch.utils.data.DataLoader(
         valid_dataset, batch_size=args.batch_size,
-        shuffle=False, num_workers=1)
+        shuffle=False, num_workers=4)
 
     # Create logger--------------------------------------------------------------------
     train_logger = SummaryWriter(result_dir_dict['train'])
@@ -77,7 +77,7 @@ def train():
         # Save snapshot----------------------------------------------------------------
         if e in args.save_snapshot_epochs:
             snapshot_dir = os.path.join(
-                result_dir_dict['snapshot'], 'epoch %d' % e)
+                result_dir_dict['snapshot'], 'epoch-%d' % e)
             utils.make_dir(snapshot_dir)
             autoencoder.save(snapshot_dir)
             save_optim(optim, snapshot_dir)
@@ -125,8 +125,8 @@ def train():
             accum_batching_time += (t1_2 - t1_1)
             accum_training_time += (t2_2 - t2_1)
             train_loader_pbar.set_description(
-                '[training] epoch: %d/%d, ' % (e, args.max_epoch) +
-                'batching: %.3fs/b, training: %.3fs/b |' % \
+                '[training] epoch:%d/%d, ' % (e, args.max_epoch) +
+                'batching:%.3fs/b, training:%.3fs/b |' % \
                 (accum_batching_time / (b + 1), accum_training_time / (b + 1)))
 
             global_step = e * num_batch + b
@@ -142,7 +142,7 @@ def train():
 
 # Load optim---------------------------------------------------------------------------
 def load_optim(optim, load_dir):
-    file_name = optim.__class__.__name__
+    file_name = optim.__class__.__name__ + '.pth'
     optim_path = os.path.join(load_dir, file_name)
     if os.path.exists(optim_path):
         optim.load_state_dict(torch.load(optim_path))
@@ -157,7 +157,7 @@ def save_optim(optim, save_dir):
             raise IsADirectoryError(save_dir)
         else:
             pass
-        file_name = optim.__class__.__name__
+        file_name = optim.__class__.__name__ + '.pth'
         optim_path = os.path.join(save_dir, file_name)
         torch.save(optim.state_dict(), optim_path)
     else:

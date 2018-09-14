@@ -9,7 +9,7 @@ cp -r src $RESULT_DIR/copy
 cp train_ae.sh $RESULT_DIR/copy
 
 python3 ./src/train_ae.py \
---cur_device=1 \
+--cur_device=0 \
 \
 --autoencoder=autoencoder00 \
 --z_size=32 \
@@ -23,15 +23,15 @@ python3 ./src/train_ae.py \
 --img_ch=3 \
 \
 --init_epoch=0 \
---max_epoch=100 \
+--max_epoch=150 \
 --lr=1e-3 \
 --lr_decay_rate=5e-1 \
 --lr_decay_epochs=20,50,80 \
 --beta1=0.5 \
 \
---eval_epoch_intv=5 \
+--eval_epoch_intv=10 \
 --valid_iter_intv=50 \
 \
 --result_dir=$RESULT_DIR \
---save_snapshot_epochs=50,60,70,80,90,100 \
+--save_snapshot_epochs=100, 130, 150 \
 # --load_snapshot_dir=$SNAPSHOT_DIR \

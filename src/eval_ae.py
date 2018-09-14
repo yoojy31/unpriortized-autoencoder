@@ -15,7 +15,7 @@ def evalate(autoencoder, data_loader):
 
         accum_mse_loss += mse_loss.item()
         data_loader_pbar.set_description(
-            '[evalation] mse: %.5f |' \
+            '[evalation] mse:%.5f |' \
             % (accum_mse_loss / (b+1)))
     mse_loss = accum_mse_loss / data_loader.__len__()
     return mse_loss
