@@ -74,7 +74,7 @@ def save_optim(optim, save_dir):
 def decay_lr(optim, decay_rate):
     for param_group in optim.param_groups:
         pre_lr = param_group['lr']
-        new_lr = decay_rate
+        new_lr = pre_lr * decay_rate
         param_group['lr'] = new_lr
     print('learning rate decay: %f --> %f' % (pre_lr, new_lr))
 

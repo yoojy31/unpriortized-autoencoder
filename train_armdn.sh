@@ -28,7 +28,7 @@ python3 ./src/train_armdn.py \
 \
 --init_epoch=0 \
 --max_epoch=150 \
---lr=2e-4 \
+--lr=1e-3 \
 --lr_decay_rate=5e-1 \
 --lr_decay_epochs=20,50,80 \
 --beta1=0.5 \
