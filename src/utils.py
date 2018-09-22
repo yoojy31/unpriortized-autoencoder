@@ -4,6 +4,11 @@ from collections import OrderedDict
 import scipy
 import torch
 
+def parse_train_args(args):
+    args.lr_decay_epochs = [int(e) for e in args.lr_decay_epochs.split(',')]
+    args.save_snapshot_epochs = [int(e) for e in args.save_snapshot_epochs.split(',')]
+    return args
+
 def make_dir(dir_path):
     if not os.path.exists(dir_path):
         os.mkdir(dir_path)
@@ -47,6 +52,31 @@ def save_img_batch(save_dir, imgs, processing, tag):
         img = processing(img)
         save_data_path = os.path.join(save_dir, '%03d-%s.png' % (i, tag))
         scipy.misc.imsave(save_data_path, img)
+
+def load_optim(optim, load_dir):
+    file_name = optim.__class__.__name__ + '.pth'
+    optim_path = os.path.join(load_dir, file_name)
+    if os.path.exists(optim_path):
+        optim.load_state_dict(torch.load(optim_path))
+        return True
+    else:
+        return False
+
+def save_optim(optim, save_dir):
+    if os.path.exists(save_dir):
+        file_name = optim.__class__.__name__ + '.pth'
+        optim_path = os.path.join(save_dir, file_name)
+        torch.save(optim.state_dict(), optim_path)
+        return True
+    else:
+        return False
+
+def decay_lr(optim, decay_rate):
+    for param_group in optim.param_groups:
+        pre_lr = param_group['lr']
+        new_lr = decay_rate
+        param_group['lr'] = new_lr
+    print('learning rate decay: %f --> %f' % (pre_lr, new_lr))
 
 def forward_masked_z(decoder, z):
     code_size = z.shape[1]

@@ -1,17 +1,17 @@
 from tqdm import tqdm
 import torch.nn.functional as F
 
-def evalate(autoencoder, data_loader):
+def evalate(ae, data_loader):
     accum_mse_loss = 0
     data_loader_pbar = tqdm(data_loader)
 
+    ae.train(mode=False)
     for b, batch_dict in enumerate(data_loader_pbar):
         x = batch_dict['image'].cuda()
         x.requires_grad_(False)
 
-        autoencoder.train(mode=False)
-        x_ = autoencoder.forward(x, 'all')
-        mse_loss = F.mse_loss(x_, x)
+        _x = ae.forward(x, 'all')
+        mse_loss = F.mse_loss(_x, x)
 
         accum_mse_loss += mse_loss.item()
         data_loader_pbar.set_description(

@@ -1,16 +1,12 @@
 import math
 import torch.nn as nn
-from .__autoencoder__ import Autoencoder
+from .__ae__ import Autoencoder
 
 class Autoencoder00(Autoencoder):
-    "autoencoder, bais=True: bais=True is better than bais=False"
-
-    def __init__(self, args):
-        super(Autoencoder00, self).__init__(args)
-
     def build(self):
         num_blocks = int(math.log2(self.args.img_size)) - 1
-        nfs = (64, 128, 256, 512, 1024, 2048, 2048)
+        #       8   16   32   64   128   256   512
+        nfs = (64, 128, 256, 512, 1024, 2048, 4096)
         nfs = (self.args.img_ch,) + nfs[:num_blocks-1] + (self.args.z_size,)
 
         if self.args.img_size == 28:
@@ -26,7 +22,7 @@ class Autoencoder00(Autoencoder):
             elif i == (num_blocks - 1):
                 encoder.append(nn.Conv2d(nfs[i], nfs[i+1], z_k_size, 1, 0, bias=True))
             else:
-                encoder.append(nn.Conv2d(nfs[i], nfs[i+1], 4, 2, 1, bias=False))
+                encoder.append(nn.Conv2d(nfs[i], nfs[i+1], 4, 2, 1, bias=True))
                 encoder.append(nn.BatchNorm2d(nfs[i+1], affine=True))
                 encoder.append(nn.LeakyReLU(0.2, inplace=True),)
         self.encoder = nn.Sequential(*encoder)
@@ -40,7 +36,7 @@ class Autoencoder00(Autoencoder):
             elif i == num_blocks:
                 decoder.append(nn.ConvTranspose2d(nfs[i], nfs[i-1], z_k_size, 1, 0, bias=True))
             else:
-                decoder.append(nn.ConvTranspose2d(nfs[i], nfs[i-1], 4, 2, 1, bias=False))
+                decoder.append(nn.ConvTranspose2d(nfs[i], nfs[i-1], 4, 2, 1, bias=True))
                 decoder.append(nn.BatchNorm2d(nfs[i-1], affine=True))
                 decoder.append(nn.LeakyReLU(0.2, inplace=True))
         self.decoder = nn.Sequential(*decoder)

@@ -1,1 +1,1 @@
-from . import autoencoder, armdn
+from . import ae, armdn

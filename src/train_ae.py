@@ -6,8 +6,8 @@ import torch
 import torch.nn.functional as F
 from tensorboardX import SummaryWriter
 
-import options
 import utils
+import option
 import eval_ae
 
 def train():
@@ -15,20 +15,19 @@ def train():
     result_dir_dict = utils.create_result_dir(args.result_dir)
 
     # Create network and optimizer-----------------------------------------------------
-    autoencoder_cls = options.network_dict[args.autoencoder]
-    autoencoder = None if autoencoder_cls is None else autoencoder_cls(args)
-    autoencoder.build()
-    params = autoencoder.parameters()
+    ae = option.network_dict[args.ae](args)
+    ae.build()
+    params = ae.parameters()
     optim = torch.optim.Adam(params, lr=args.lr, betas=(args.beta1, 0.999))
 
     # Load models and optimizer and use cuda-------------------------------------------
     if args.load_snapshot_dir is not None:
-        autoencoder.load(args.load_snapshot_dir)
-        load_optim(optim, args.load_snapshot_dir)
-    autoencoder.cuda()
+        assert ae.load(args.load_snapshot_dir)
+        assert utils.load_optim(optim, args.load_snapshot_dir)
+    ae.cuda()
 
     # Load dataset---------------------------------------------------------------------
-    dataset_cls = options.dataset_dict[args.dataset]
+    dataset_cls = option.dataset_dict[args.dataset]
     train_dataset = dataset_cls(args, args.train_set_path)
     valid_dataset = dataset_cls(args, args.valid_set_path)
 
@@ -45,42 +44,36 @@ def train():
     eval_logger = SummaryWriter(result_dir_dict['eval'])
 
     # Training-------------------------------------------------------------------------
-    cur_lr = args.lr
     num_batch = train_data_loader.__len__()
-    save_input_imgs = next(iter(valid_data_loader))['image'].cuda()
+    x_save = next(iter(valid_data_loader))['image'].cuda()
     for e in range(args.init_epoch, args.max_epoch + 1):
 
         # Save image result------------------------------------------------------------
-        autoencoder.train(mode=False)
-        save_output_imgs = autoencoder.forward(save_input_imgs, 'all')
+        ae.train(mode=False)
+        _x_save = ae.forward(x_save, 'all')
+        save_img_dir = os.path.join(result_dir_dict['img'], 'epoch-%d' % e)
         utils.save_img_batch(
-            result_dir_dict['img'], save_input_imgs,
-            valid_dataset.inv_preprocessing, 'input_img')
+            save_img_dir, x_save, valid_dataset.inv_preprocessing, 'input_img')
         utils.save_img_batch(
-            result_dir_dict['img'], save_output_imgs,
-            valid_dataset.inv_preprocessing, 'output_img')
+            save_img_dir, _x_save, valid_dataset.inv_preprocessing, 'recon_img')
 
         # Evalutaion-------------------------------------------------------------------
         if e % args.eval_epoch_intv == 0:
-            eval_mse_loss = eval_ae.evalate(autoencoder, valid_data_loader)
+            eval_mse_loss = eval_ae.evalate(ae, valid_data_loader)
             global_step = e * num_batch
             eval_logger.add_scalar('mse_loss', eval_mse_loss, global_step)
 
         # Learning rate decay----------------------------------------------------------
         if e in args.lr_decay_epochs:
-            cur_lr *= args.lr_decay_rate
-            for param_group in optim.param_groups:
-                param_group['lr'] = cur_lr
-            pre_lr = cur_lr / args.lr_decay_rate
-            print('learning rate decay: %f --> %f' % (pre_lr, cur_lr))
+            utils.decay_lr(optim, args.lr_decay_rate)
 
         # Save snapshot----------------------------------------------------------------
         if e in args.save_snapshot_epochs:
             snapshot_dir = os.path.join(
                 result_dir_dict['snapshot'], 'epoch-%d' % e)
             utils.make_dir(snapshot_dir)
-            autoencoder.save(snapshot_dir)
-            save_optim(optim, snapshot_dir)
+            assert ae.save(snapshot_dir)
+            assert utils.save_optim(optim, snapshot_dir)
 
         # Break loop-------------------------------------------------------------------
         if e == args.max_epoch:
@@ -102,9 +95,9 @@ def train():
             x = train_batch_dict['image'].cuda()
             x.requires_grad_(True)
 
-            autoencoder.train(mode=True)
-            x_ = autoencoder.forward(x, 'all')
-            train_mse_loss = F.mse_loss(x_, x)
+            ae.train(mode=True)
+            _x = ae.forward(x, 'all')
+            train_mse_loss = F.mse_loss(_x, x)
 
             optim.zero_grad()
             train_mse_loss.backward()
@@ -117,9 +110,9 @@ def train():
                 x = valid_batch_dict['image'].cuda()
                 x.requires_grad_(False)
 
-                autoencoder.train(mode=False)
-                x_ = autoencoder.forward(x, 'all')
-                valid_mse_loss = F.mse_loss(x_, x)
+                ae.train(mode=False)
+                _x = ae.forward(x, 'all')
+                valid_mse_loss = F.mse_loss(_x, x)
 
             # Set description and write log--------------------------------------------
             accum_batching_time += (t1_2 - t1_1)
@@ -139,33 +132,7 @@ def train():
     valid_logger.close()
     eval_logger.close()
 
-
-# Load optim---------------------------------------------------------------------------
-def load_optim(optim, load_dir):
-    file_name = optim.__class__.__name__ + '.pth'
-    optim_path = os.path.join(load_dir, file_name)
-    if os.path.exists(optim_path):
-        optim.load_state_dict(torch.load(optim_path))
-    else:
-        raise FileNotFoundError(load_dir)
-
-
-# Save optim---------------------------------------------------------------------------
-def save_optim(optim, save_dir):
-    if os.path.exists(save_dir):
-        if not os.path.isdir(save_dir):
-            raise IsADirectoryError(save_dir)
-        else:
-            pass
-        file_name = optim.__class__.__name__ + '.pth'
-        optim_path = os.path.join(save_dir, file_name)
-        torch.save(optim.state_dict(), optim_path)
-    else:
-        raise FileNotFoundError(save_dir)
-
-
-if __name__=='__main__':
-    args = options.train_ae_parser.parse_args()
-    args.lr_decay_epochs = [int(e) for e in args.lr_decay_epochs.split(',')]
-    args.save_snapshot_epochs = [int(e) for e in args.save_snapshot_epochs.split(',')]
+if __name__ == '__main__':
+    args = option.train_parser.parse_args()
+    args = utils.parse_train_args(args)
     train()
