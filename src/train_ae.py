@@ -3,9 +3,9 @@ import time
 import itertools
 from tqdm import tqdm
 import torch
-import torch.nn.functional as F
 from tensorboardX import SummaryWriter
 
+import loss
 import utils
 import option
 import eval_ae
@@ -19,11 +19,15 @@ def train():
     ae.build()
     params = ae.parameters()
     optim = torch.optim.Adam(params, lr=args.lr, betas=(args.beta1, 0.999))
+    perc_loss_fn = loss.PerceptualLoss()
 
     # Load models and optimizer and use cuda-------------------------------------------
     if args.load_snapshot_dir is not None:
         assert ae.load(args.load_snapshot_dir)
         assert utils.load_optim(optim, args.load_snapshot_dir)
+    if len(args.devices) > 1:
+        ae = torch.nn.DataParallel(ae)
+    perc_loss_fn.cuda()
     ae.cuda()
 
     # Load dataset---------------------------------------------------------------------
@@ -59,9 +63,11 @@ def train():
 
         # Evalutaion-------------------------------------------------------------------
         if e % args.eval_epoch_intv == 0:
-            eval_mse_loss = eval_ae.evalate(ae, valid_data_loader)
+            eval_mse_loss, eval_perc_loss = eval_ae.evalate(
+                args, ae, valid_data_loader, perc_loss_fn)
             global_step = e * num_batch
             eval_logger.add_scalar('mse_loss', eval_mse_loss, global_step)
+            eval_logger.add_scalar('perc_loss', eval_perc_loss, global_step)
 
         # Learning rate decay----------------------------------------------------------
         if e in args.lr_decay_epochs:
@@ -72,7 +78,10 @@ def train():
             snapshot_dir = os.path.join(
                 result_dir_dict['snapshot'], 'epoch-%d' % e)
             utils.make_dir(snapshot_dir)
-            assert ae.save(snapshot_dir)
+            if len(args.devices) > 1:
+                assert ae.module.save(snapshot_dir)
+            else:
+                assert ae.save(snapshot_dir)
             assert utils.save_optim(optim, snapshot_dir)
 
         # Break loop-------------------------------------------------------------------
@@ -97,10 +106,11 @@ def train():
 
             ae.train(mode=True)
             _x = ae.forward(x, 'all')
-            train_mse_loss = F.mse_loss(_x, x)
+            train_mse_loss = args.mse_w * torch.nn.functional.mse_loss(_x, x)
+            train_perc_loss = args.perc_w * perc_loss_fn.forward(_x, x)
 
             optim.zero_grad()
-            train_mse_loss.backward()
+            (train_mse_loss + train_perc_loss).backward()
             optim.step()
             t2_2 = time.time()
 
@@ -112,7 +122,8 @@ def train():
 
                 ae.train(mode=False)
                 _x = ae.forward(x, 'all')
-                valid_mse_loss = F.mse_loss(_x, x)
+                valid_mse_loss = args.mse_w * torch.nn.functional.mse_loss(_x, x)
+                valid_perc_loss = args.perc_w * perc_loss_fn.forward(_x, x)
 
             # Set description and write log--------------------------------------------
             accum_batching_time += (t1_2 - t1_1)
@@ -125,6 +136,8 @@ def train():
             global_step = e * num_batch + b
             train_logger.add_scalar('mse_loss', train_mse_loss.item(), global_step)
             valid_logger.add_scalar('mse_loss', valid_mse_loss.item(), global_step)
+            train_logger.add_scalar('perc_loss', train_perc_loss.item(), global_step)
+            valid_logger.add_scalar('perc_loss', valid_perc_loss.item(), global_step)
             t1_1 = time.time()
 
     # Close logger---------------------------------------------------------------------
@@ -135,4 +148,5 @@ def train():
 if __name__ == '__main__':
     args = option.train_parser.parse_args()
     args = utils.parse_train_args(args)
+    torch.cuda.set_device(args.devices[0])
     train()

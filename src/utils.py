@@ -5,6 +5,7 @@ import scipy
 import torch
 
 def parse_train_args(args):
+    args.devices = [int(e) for e in args.devices.split(',')]
     args.lr_decay_epochs = [int(e) for e in args.lr_decay_epochs.split(',')]
     args.save_snapshot_epochs = [int(e) for e in args.save_snapshot_epochs.split(',')]
     return args
@@ -53,8 +54,12 @@ def save_img_batch(save_dir, imgs, processing, tag):
         save_data_path = os.path.join(save_dir, '%03d-%s.png' % (i, tag))
         scipy.misc.imsave(save_data_path, img)
 
-def load_optim(optim, load_dir):
-    file_name = optim.__class__.__name__ + '.pth'
+def load_optim(optim, load_dir, tag=None):
+    if tag is None:
+        file_name = optim.__class__.__name__ + '.pth'
+    else:
+        file_name = optim.__class__.__name__ + '-' + tag + '.pth'
+
     optim_path = os.path.join(load_dir, file_name)
     if os.path.exists(optim_path):
         optim.load_state_dict(torch.load(optim_path))
@@ -62,9 +67,12 @@ def load_optim(optim, load_dir):
     else:
         return False
 
-def save_optim(optim, save_dir):
+def save_optim(optim, save_dir, tag=None):
     if os.path.exists(save_dir):
-        file_name = optim.__class__.__name__ + '.pth'
+        if tag is None:
+            file_name = optim.__class__.__name__ + '.pth'
+        else:
+            file_name = optim.__class__.__name__ + '-' + tag + '.pth'
         optim_path = os.path.join(save_dir, file_name)
         torch.save(optim.state_dict(), optim_path)
         return True

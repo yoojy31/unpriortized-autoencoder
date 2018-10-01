@@ -26,6 +26,9 @@ def train():
     assert ae.load(args.load_snapshot_dir)
     if armdn.load(args.load_snapshot_dir):
         assert utils.load_optim(optim, args.load_snapshot_dir)
+    if len(args.devices) > 1:
+        ae = torch.nn.DataParallel(ae)
+        armdn = torch.nn.DataParallel(armdn)
     ae.cuda()
     armdn.cuda()
 

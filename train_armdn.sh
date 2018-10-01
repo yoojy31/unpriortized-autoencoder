@@ -1,21 +1,21 @@
 #!/bin/bash
 
-LOAD_SNAPSHOT_DIR=result/celeba/32x32/32/ae/20180914-151432-ae00/snapshot/epoch-100
-RESULT_DIR=./result/celeba/32x32/32/armdn/`(date "+%Y%m%d-%H%M%S")`-armdn00
+LOAD_SNAPSHOT_DIR=result/celeba/64x64/64/ae/20180928-134410-ae00/snapshot/epoch-100
+RESULT_DIR=./result/celeba/64x64/64/armdn/`(date "+%Y%m%d-%H%M%S")`-armdn00
 
 mkdir $RESULT_DIR
 mkdir $RESULT_DIR/copy
 cp -r src $RESULT_DIR/copy
-cp train_ae.sh $RESULT_DIR/copy
+cp train_armdn.sh $RESULT_DIR/copy
 
 python3 ./src/train_armdn.py \
 --cur_device=0 \
 \
 --ae=ae00 \
 --armdn=armdn00 \
---z_size=32 \
+--z_size=64 \
 \
---n_gauss=20 \
+--n_gauss=50 \
 --tau=1.0 \
 \
 --dataset=celeb \
@@ -23,7 +23,7 @@ python3 ./src/train_armdn.py \
 --valid_set_path=./data/celeba/align-crop-128/test \
 \
 --batch_size=128 \
---img_size=32 \
+--img_size=64 \
 --img_ch=3 \
 \
 --init_epoch=0 \

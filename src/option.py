@@ -22,7 +22,7 @@ dataset_dict = {
 
 #==================================================================================================
 train_parser = argparse.ArgumentParser()
-train_parser.add_argument('--cur_device', type=int, default=0)
+train_parser.add_argument('--devices', type=str, default='0')
 
 train_parser.add_argument('--ae', type=str, default=None, help=network_dict.keys())
 train_parser.add_argument('--armdn', type=str, default=None, help=network_dict.keys())
@@ -45,6 +45,9 @@ train_parser.add_argument('--lr', type=float, default=1e-3)
 train_parser.add_argument('--lr_decay_rate', type=float, default=5e-1)
 train_parser.add_argument('--lr_decay_epochs', type=str, default='')
 train_parser.add_argument('--beta1', type=float, default=0.9)
+
+train_parser.add_argument('--mse_w', type=float, default=1.0)
+train_parser.add_argument('--perc_w', type=float, default=0.1)
 
 train_parser.add_argument('--eval_epoch_intv', type=int, default=10)
 train_parser.add_argument('--valid_iter_intv', type=int, default=50)
