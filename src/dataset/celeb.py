@@ -18,9 +18,9 @@ class Celeb(ImgDataset):
     def __getitem__(self, idx):
         img_path = os.path.join(self.dataset_root, self.img_names[idx])
         x = scipy.misc.imread(img_path, mode='RGB')
-        return {'image': self.preprocessing(x)}
+        return {'image': self.pre_processing(x)}
 
-    def preprocessing(self, x):
+    def pre_processing(self, x):
         if self.img_size is not None:
             x = scipy.misc.imresize(
                 x, self.img_size,
@@ -31,7 +31,7 @@ class Celeb(ImgDataset):
         x = torch.from_numpy(x).float()
         return x
 
-    def inv_preprocessing(self, x):
+    def post_processing(self, x):
         x = torch.clamp(x, min=-1, max=1)
         x = x.cpu().detach().numpy()
         x = np.transpose(x, (1, 2, 0))

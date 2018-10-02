@@ -5,25 +5,24 @@ from tqdm import tqdm
 import torch
 from tensorboardX import SummaryWriter
 
-import loss
 import utils
 import option
 import eval_armdn
 
 def train():
-    # Create result directories--------------------------------------------------------
+    # Create result directories------------------------------------------------------------------
     result_dir_dict = utils.create_result_dir(args.result_dir)
 
-    # Create network and optimizer-----------------------------------------------------
+    # Create network and optimizer---------------------------------------------------------------
     ae = option.network_dict[args.ae](args)
     ae.build()
     armdn = option.network_dict[args.armdn](args)
     armdn.build()
-    params = armdn.parameters()
-    optim = torch.optim.Adam(params, lr=args.lr, betas=(args.beta1, 0.999))
+    train_params = armdn.parameters()
+    optim = torch.optim.Adam(train_params, lr=args.lr, betas=(args.beta1, 0.999))
 
-    # Load models and optimizer and use cuda-------------------------------------------
-    assert ae.load(args.load_snapshot_dir)
+    # Load models and optimizer and use cuda-----------------------------------------------------
+    # assert ae.load(args.load_snapshot_dir)
     if armdn.load(args.load_snapshot_dir):
         assert utils.load_optim(optim, args.load_snapshot_dir)
     if len(args.devices) > 1:
@@ -32,7 +31,7 @@ def train():
     ae.cuda()
     armdn.cuda()
 
-    # Load dataset---------------------------------------------------------------------
+    # Load dataset-------------------------------------------------------------------------------
     dataset_cls = option.dataset_dict[args.dataset]
     train_dataset = dataset_cls(args, args.train_set_path)
     valid_dataset = dataset_cls(args, args.valid_set_path)
@@ -44,37 +43,39 @@ def train():
         valid_dataset, batch_size=args.batch_size,
         shuffle=False, num_workers=4)
 
-    # Create logger--------------------------------------------------------------------
+    # Create logger------------------------------------------------------------------------------
     train_logger = SummaryWriter(result_dir_dict['train'])
     valid_logger = SummaryWriter(result_dir_dict['valid'])
     eval_logger = SummaryWriter(result_dir_dict['eval'])
 
-    # Training-------------------------------------------------------------------------
+    # Training-----------------------------------------------------------------------------------
     ae.train(mode=False)
     for param in ae.parameters():
         param.requires_grad = False
     num_batch = train_data_loader.__len__()
     for e in range(args.init_epoch, args.max_epoch + 1):
 
-        # Save image result------------------------------------------------------------
+        # Save image result----------------------------------------------------------------------
         armdn.train(mode=False)
         z_ = armdn.sample(args.batch_size, args.tau)
-        x__ = ae.forward(z_, 'decoder')
+        x__ = ae.forward(z_, forward_type='decoder')
         save_img_dir = os.path.join(result_dir_dict['img'], 'epoch-%d' % e)
-        utils.save_img_batch(
-            save_img_dir, x__, valid_dataset.inv_preprocessing, 'gen_img')
+        utils.save_img_batch(save_img_dir, x__, valid_dataset.post_processing, 'gen_img')
 
-        # Evalutaion-------------------------------------------------------------------
+        # Evalutaion-----------------------------------------------------------------------------
         if e % args.eval_epoch_intv == 0:
+            armdn.train(mode=False)
+            for param in train_params:
+                param.requires_grad = False
             eval_mse_loss = eval_armdn.evaluate(armdn, ae, valid_data_loader)
             global_step = e * num_batch
             eval_logger.add_scalar('mdn_loss', eval_mse_loss, global_step)
 
-        # Learning rate decay----------------------------------------------------------
+        # Learning rate decay--------------------------------------------------------------------
         if e in args.lr_decay_epochs:
             utils.decay_lr(optim, args.lr_decay_rate)
 
-        # Save snapshot----------------------------------------------------------------
+        # Save snapshot--------------------------------------------------------------------------
         if e in args.save_snapshot_epochs:
             snapshot_dir = os.path.join(result_dir_dict['snapshot'], 'epoch-%d' % e)
             utils.make_dir(snapshot_dir)
@@ -82,48 +83,50 @@ def train():
             assert armdn.save(snapshot_dir)
             assert utils.save_optim(optim, snapshot_dir)
 
-        # Break loop-------------------------------------------------------------------
+        # Break loop-----------------------------------------------------------------------------
         if e == args.max_epoch:
             break
 
-        # Train one epoch--------------------------------------------------------------
+        # Train one epoch------------------------------------------------------------------------
+        for param in train_params:
+            param.requires_grad = True
         valid_set_cycle = itertools.cycle(valid_data_loader)
         train_loader_pbar = tqdm(train_data_loader)
         accum_batching_time = 0
         accum_training_time = 0
 
-        # Get batch dict---------------------------------------------------------------
+        # Get batch dict-------------------------------------------------------------------------
         t1_1 = time.time()
         for b, train_batch_dict in enumerate(train_loader_pbar):
             t1_2 = time.time()
 
-            # Train one step-----------------------------------------------------------
+            # Train one step---------------------------------------------------------------------
             t2_1 = time.time()
             x = train_batch_dict['image'].cuda()
             x.requires_grad_(False)
 
             armdn.train(mode=True)
-            z = ae.forward(x, 'encoder')
+            z = ae.forward(x, forward_type='encoder')
             mu, sig, pi = armdn.forward(z)
-            train_mdn_loss = loss.mdn_loss_fn(z, mu, sig, pi)
+            train_mdn_loss = armdn.calc_loss(z, mu, sig, pi)
 
             optim.zero_grad()
             train_mdn_loss.backward()
             optim.step()
             t2_2 = time.time()
 
-            # Validation---------------------------------------------------------------
+            # Validation-------------------------------------------------------------------------
             if b % args.valid_iter_intv == 0:
                 valid_batch_dict = next(valid_set_cycle)
                 x = valid_batch_dict['image'].cuda()
                 x.requires_grad_(False)
 
                 armdn.train(mode=False)
-                z = ae.forward(x, 'encoder')
+                z = ae.forward(x, forward_type='encoder')
                 mu, sig, pi = armdn.forward(z)
-                valid_mdn_loss = loss.mdn_loss_fn(z, mu, sig, pi)
+                valid_mdn_loss = armdn.calc_loss(z, mu, sig, pi)
 
-            # Set description and write log--------------------------------------------
+            # Set description and write log------------------------------------------------------
             accum_batching_time += (t1_2 - t1_1)
             accum_training_time += (t2_2 - t2_1)
             train_loader_pbar.set_description(
@@ -136,7 +139,7 @@ def train():
             valid_logger.add_scalar('mdn_loss', valid_mdn_loss.item(), global_step)
             t1_1 = time.time()
 
-    # Close logger---------------------------------------------------------------------
+    # Close logger-------------------------------------------------------------------------------
     train_logger.close()
     valid_logger.close()
     eval_logger.close()

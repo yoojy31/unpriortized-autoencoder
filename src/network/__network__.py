@@ -13,6 +13,10 @@ class Network(abc.ABC, nn.Module):
         pass
 
     @ abc.abstractmethod
+    def calc_loss(self, *x):
+        pass
+
+    @ abc.abstractmethod
     def forward(self, *x):
         pass
 

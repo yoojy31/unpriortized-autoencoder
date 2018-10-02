@@ -44,7 +44,7 @@ class Autoencoder10(Autoencoder):
                 decoder.append(nn.LeakyReLU(0.2, inplace=True))
         self.decoder = nn.Sequential(*decoder)
 
-        for m in self.modules():
+        for m in encoder + decoder:
             if isinstance(m, nn.Conv2d):
                 m.weight.data.normal_(0.0, 0.02)
                 if m.bias is not None:

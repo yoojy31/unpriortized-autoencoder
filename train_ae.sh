@@ -9,7 +9,7 @@ cp -r src $RESULT_DIR/copy
 cp train_ae.sh $RESULT_DIR/copy
 
 python3 ./src/train_ae.py \
---devices=0 \
+--devices=1 \
 \
 --ae=ae00 \
 --z_size=256 \

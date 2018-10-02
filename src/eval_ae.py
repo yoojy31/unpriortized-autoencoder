@@ -1,28 +1,28 @@
+from collections import OrderedDict
 from tqdm import tqdm
-import torch
 
-def evalate(args, ae, data_loader, perc_loss_fn):
-    accum_mse_loss = 0
-    accum_perc_loss = 0
+def evalate(ae, data_loader):
+    accum_loss_dict = OrderedDict()
     data_loader_pbar = tqdm(data_loader)
 
-    ae.train(mode=False)
     for b, batch_dict in enumerate(data_loader_pbar):
         x = batch_dict['image'].cuda()
         x.requires_grad_(False)
-        _x = ae.forward(x, 'all')
+        loss_dict = ae.forward(x, forward_type='all')
 
-        x.detach()
-        _x.detach()
-        mse_loss = args.mse_w * torch.nn.functional.mse_loss(_x, x)
-        perc_loss = args.perc_w * perc_loss_fn.forward(_x, x)
+        for key, value in loss_dict.items():
+            try:
+                accum_loss_dict[key] += value.item()
+            except KeyError:
+                accum_loss_dict[key] = 0
+                accum_loss_dict[key] += value.item()
 
-        accum_mse_loss += mse_loss.item()
-        accum_perc_loss += perc_loss.item()
+        loss_str = ''
+        for key, value in accum_loss_dict.items():
+            loss_str += '%s:%.5f ' % (key, value/(b+1))
+        data_loader_pbar.set_description('[evalation] %s|' % loss_str)
 
-        data_loader_pbar.set_description(
-            '[evalation] mse:%.5f perc:%.5f |' \
-            % ((accum_mse_loss / (b+1)), (accum_perc_loss / (b+1))))
-    mse_loss = accum_mse_loss / data_loader.__len__()
-    perc_loss = accum_perc_loss / data_loader.__len__()
-    return mse_loss, perc_loss
+    for key, value in accum_loss_dict.items():
+        accum_loss_dict[key] = value / data_loader.__len__()
+    mean_loss_dict = accum_loss_dict
+    return mean_loss_dict

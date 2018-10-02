@@ -1,21 +1,21 @@
 import numpy as np
+from collections import OrderedDict
 import torch
 import torch.nn as nn
 from ..__network__ import Network
+from .__loss__ import mdn_loss_fn
 
 class ARMDN(Network):
-    forward_types = ('all', 'encoder', 'decoder')
-
     def __init__(self, args):
         super(ARMDN, self).__init__(args)
-        self.armdn = None
-
-    def build(self):
-        assert (self.encoder and self.decoder) is None
         self.armdn = nn.Sequential()
 
-    def forward(self, *x):
-        z = torch.squeeze(torch.transpose(x[0], 1, 2), dim=3)
+    def calc_loss(self, z, mu, sig, pi):
+        mdn_loss = mdn_loss_fn(z, mu, sig, pi)
+        return mdn_loss
+
+    def forward(self, z):
+        z = torch.squeeze(torch.transpose(z, 1, 2), dim=3)
         batch_size = z.size()[0]
 
         pad = torch.zeros((batch_size, 1, self.args.z_size)).cuda()
