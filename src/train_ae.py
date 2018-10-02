@@ -106,13 +106,22 @@ def train():
 
             ae.train(mode=True)
             _x = ae.forward(x, 'all')
-            train_mse_loss = args.mse_w * torch.nn.functional.mse_loss(_x, x)
-            train_perc_loss = args.perc_w * perc_loss_fn.forward(_x, x)
+            train_mse_loss = args.mse_w * torch.nn.functional.mse_loss(_x, x.detach())
+            if args.perc_w == 0:
+                train_perc_loss = torch.zeros(train_mse_loss.shape).cuda()
+            else:
+                train_perc_loss = args.perc_w * perc_loss_fn.forward(_x, x.detach())
 
             optim.zero_grad()
             (train_mse_loss + train_perc_loss).backward()
             optim.step()
             t2_2 = time.time()
+
+            # Write training log
+            global_step = e * num_batch + b
+            if b % 10 == 0:
+                train_logger.add_scalar('mse_loss', train_mse_loss.item(), global_step)
+                train_logger.add_scalar('perc_loss', train_perc_loss.item(), global_step)
 
             # Validation---------------------------------------------------------------
             if b % args.valid_iter_intv == 0:
@@ -123,21 +132,24 @@ def train():
                 ae.train(mode=False)
                 _x = ae.forward(x, 'all')
                 valid_mse_loss = args.mse_w * torch.nn.functional.mse_loss(_x, x)
-                valid_perc_loss = args.perc_w * perc_loss_fn.forward(_x, x)
+                if args.perc_w == 0:
+                    valid_perc_loss = torch.zeros(valid_mse_loss.shape).cuda()
+                else:
+                    valid_perc_loss = args.perc_w * perc_loss_fn.forward(_x, x)
+
+                # Write validation log
+                valid_logger.add_scalar('mse_loss', valid_mse_loss.item(), global_step)
+                valid_logger.add_scalar('perc_loss', valid_perc_loss.item(), global_step)
 
             # Set description and write log--------------------------------------------
             accum_batching_time += (t1_2 - t1_1)
             accum_training_time += (t2_2 - t2_1)
-            train_loader_pbar.set_description(
-                '[training] epoch:%d/%d, ' % (e, args.max_epoch) +
-                'batching:%.3fs/b, training:%.3fs/b |' % \
-                (accum_batching_time / (b + 1), accum_training_time / (b + 1)))
 
-            global_step = e * num_batch + b
-            train_logger.add_scalar('mse_loss', train_mse_loss.item(), global_step)
-            valid_logger.add_scalar('mse_loss', valid_mse_loss.item(), global_step)
-            train_logger.add_scalar('perc_loss', train_perc_loss.item(), global_step)
-            valid_logger.add_scalar('perc_loss', valid_perc_loss.item(), global_step)
+            if b % 10 == 0:
+                train_loader_pbar.set_description(
+                    '[training] epoch:%d/%d, ' % (e, args.max_epoch) +
+                    'batching:%.3fs/b, training:%.3fs/b |' % \
+                    (accum_batching_time / (b + 1), accum_training_time / (b + 1)))
             t1_1 = time.time()
 
     # Close logger---------------------------------------------------------------------

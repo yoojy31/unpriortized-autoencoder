@@ -51,6 +51,8 @@ def train():
 
     # Training-------------------------------------------------------------------------
     ae.train(mode=False)
+    for param in ae.parameters():
+        param.requires_grad = False
     num_batch = train_data_loader.__len__()
     for e in range(args.init_epoch, args.max_epoch + 1):
 
@@ -98,7 +100,7 @@ def train():
             # Train one step-----------------------------------------------------------
             t2_1 = time.time()
             x = train_batch_dict['image'].cuda()
-            x.requires_grad_(True)
+            x.requires_grad_(False)
 
             armdn.train(mode=True)
             z = ae.forward(x, 'encoder')
@@ -148,4 +150,5 @@ def make_ae_link(load_snapshot_dir, save_snapshot_dir, ae):
 if __name__ == '__main__':
     args = option.train_parser.parse_args()
     args = utils.parse_train_args(args)
+    torch.cuda.set_device(args.devices[0])
     train()

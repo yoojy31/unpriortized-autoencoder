@@ -10,8 +10,10 @@ def evalate(args, ae, data_loader, perc_loss_fn):
     for b, batch_dict in enumerate(data_loader_pbar):
         x = batch_dict['image'].cuda()
         x.requires_grad_(False)
-
         _x = ae.forward(x, 'all')
+
+        x.detach()
+        _x.detach()
         mse_loss = args.mse_w * torch.nn.functional.mse_loss(_x, x)
         perc_loss = args.perc_w * perc_loss_fn.forward(_x, x)
 
