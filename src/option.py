@@ -4,12 +4,7 @@ import network
 
 network_dict = {
     'ae00': network.ae.Autoencoder00,
-    'ae10': network.ae.Autoencoder10,
-
     'armdn00': network.armdn.ARMDN00,
-    'armdn01': network.armdn.ARMDN01,
-    'armdn02': network.armdn.ARMDN02,
-
     'none': None,
     None: None,
 }

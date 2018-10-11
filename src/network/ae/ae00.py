@@ -29,9 +29,9 @@ class Autoencoder00(Autoencoder):
 
         decoder = list()
         for i in range(num_blocks, 0, -1):
-            # print(nfs[i], nfs[i-1])
             if i == 1:
                 decoder.append(nn.ConvTranspose2d(nfs[i], nfs[i-1], 4, 2, 1, bias=True))
+                decoder.append(nn.Tanh())
             elif i == num_blocks:
                 decoder.append(nn.ConvTranspose2d(nfs[i], nfs[i-1], z_k_size, 1, 0, bias=True))
             else:
@@ -42,16 +42,16 @@ class Autoencoder00(Autoencoder):
 
         for m in encoder + decoder:
             if isinstance(m, nn.Conv2d):
-                m.weight.data.normal_(0.0, 0.02)
+                nn.init.orthogonal_(m.weight.data)
                 if m.bias is not None:
                     m.bias.data.zero_()
             elif isinstance(m, nn.ConvTranspose2d):
-                m.weight.data.normal_(0.0, 0.02)
+                nn.init.orthogonal_(m.weight.data)
                 if m.bias is not None:
                     m.bias.data.zero_()
             elif isinstance(m, nn.BatchNorm2d):
                 if m.weight is not None:
-                    m.weight.data.normal_(0.0, 0.02)
+                    nn.init.orthogonal_(m.weight.data)
                 if m.bias is not None:
                     m.bias.data.zero_()
             else:

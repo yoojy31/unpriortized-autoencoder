@@ -24,7 +24,7 @@ class ARMDN00(ARMDN):
 
         for m in self.modules():
             if isinstance(m, nn.Conv1d):
-                m.weight.data.normal_(0.0, 0.02)
+                nn.init.orthogonal_(m.weight.data)
                 if m.bias is not None:
                     m.bias.data.zero_()
             else:

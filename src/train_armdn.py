@@ -22,7 +22,7 @@ def train():
     optim = torch.optim.Adam(train_params, lr=args.lr, betas=(args.beta1, 0.999))
 
     # Load models and optimizer and use cuda-----------------------------------------------------
-    # assert ae.load(args.load_snapshot_dir)
+    assert ae.load(args.load_snapshot_dir)
     if armdn.load(args.load_snapshot_dir):
         assert utils.load_optim(optim, args.load_snapshot_dir)
     if len(args.devices) > 1:
@@ -115,6 +115,10 @@ def train():
             optim.step()
             t2_2 = time.time()
 
+            global_step = e * num_batch + b
+            if b % 10 == 0:
+                train_logger.add_scalar('mdn_loss', train_mdn_loss.item(), global_step)
+
             # Validation-------------------------------------------------------------------------
             if b % args.valid_iter_intv == 0:
                 valid_batch_dict = next(valid_set_cycle)
@@ -125,18 +129,17 @@ def train():
                 z = ae.forward(x, forward_type='encoder')
                 mu, sig, pi = armdn.forward(z)
                 valid_mdn_loss = armdn.calc_loss(z, mu, sig, pi)
+                valid_logger.add_scalar('mdn_loss', valid_mdn_loss.item(), global_step)
 
             # Set description and write log------------------------------------------------------
             accum_batching_time += (t1_2 - t1_1)
             accum_training_time += (t2_2 - t2_1)
-            train_loader_pbar.set_description(
-                '[training] epoch:%d/%d, ' % (e, args.max_epoch) +
-                'batching:%.3fs/b, training:%.3fs/b |' % \
-                (accum_batching_time / (b + 1), accum_training_time / (b + 1)))
+            if b % 10 == 0:
+                train_loader_pbar.set_description(
+                    '[training] epoch:%d/%d, ' % (e, args.max_epoch) +
+                    'batching:%.3fs/b, training:%.3fs/b |' % \
+                    (accum_batching_time / (b + 1), accum_training_time / (b + 1)))
 
-            global_step = e * num_batch + b
-            train_logger.add_scalar('mdn_loss', train_mdn_loss.item(), global_step)
-            valid_logger.add_scalar('mdn_loss', valid_mdn_loss.item(), global_step)
             t1_1 = time.time()
 
     # Close logger-------------------------------------------------------------------------------

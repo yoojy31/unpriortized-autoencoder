@@ -1,3 +1,4 @@
+import os
 from collections import OrderedDict
 import torch
 import torch.nn as nn
@@ -57,3 +58,27 @@ class Autoencoder(Network):
         else:
             result = None
         return result
+
+    def save(self, save_dir):
+        if os.path.exists(save_dir):
+            encoder_file_name = self.__class__.__name__ + '.encoder.pth'
+            decoder_file_name = self.__class__.__name__ + '.decoder.pth'
+            encoder_model_path = os.path.join(save_dir, encoder_file_name)
+            decoder_model_path = os.path.join(save_dir, decoder_file_name)
+            torch.save(self.encoder.state_dict(), encoder_model_path)
+            torch.save(self.decoder.state_dict(), decoder_model_path)
+            return True
+        else:
+            return False
+
+    def load(self, load_dir):
+        encoder_file_name = self.__class__.__name__ + '.encoder.pth'
+        decoder_file_name = self.__class__.__name__ + '.decoder.pth'
+        encoder_model_path = os.path.join(load_dir, encoder_file_name)
+        decoder_model_path = os.path.join(load_dir, decoder_file_name)
+        if os.path.exists(encoder_model_path) and os.path.exists(decoder_model_path):
+            self.encoder.load_state_dict(torch.load(encoder_model_path))
+            self.decoder.load_state_dict(torch.load(decoder_model_path))
+            return True
+        else:
+            return False
