@@ -39,14 +39,18 @@ class ARMDN(Network):
 
     def sample(self, n_sample, tau):
         def sample_from_softmax(mu, sig, _pi):
-            # softmax_with_tau
+            # softmax_with_temperature
             _pi = torch.exp(torch.log(_pi) / tau)
-            pi = _pi / torch.sum(_pi, dim=1)
+            pi = _pi / torch.sum(_pi, dim=1, keepdim=True)
 
             mu = torch.squeeze(mu).detach().cpu().numpy()
             sig = torch.squeeze(sig).detach().cpu().numpy()
             pi = torch.squeeze(pi).detach().cpu().numpy()
-            k = np.random.choice(self.args.n_gauss, p=pi)
+
+            k = list()
+            for p in pi:
+                k.append(np.random.choice(self.args.n_gauss, p=p))
+            k = np.array(k)
 
             indices = (np.arange(n_sample), k)
             rn = np.random.randn(n_sample)

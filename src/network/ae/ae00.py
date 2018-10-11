@@ -51,7 +51,7 @@ class Autoencoder00(Autoencoder):
                     m.bias.data.zero_()
             elif isinstance(m, nn.BatchNorm2d):
                 if m.weight is not None:
-                    nn.init.orthogonal_(m.weight.data)
+                    m.weight.data.normal_(0.0, 0.02)
                 if m.bias is not None:
                     m.bias.data.zero_()
             else:
