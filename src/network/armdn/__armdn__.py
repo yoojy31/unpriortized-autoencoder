@@ -38,15 +38,15 @@ class ARMDN(Network):
         return mu, sig, pi
 
     def sample(self, n_sample, tau):
-        def sample_gumbel(mu, sig, _pi):
-            pi = nn.functional.gumbel_softmax(torch.squeeze(_pi), tau=tau)
-            # rg = np.random.gumbel(loc=0, scale=1, size=pi.shape)
-            # k = np.random.choice(self.args.n_gauss, size=(n_sample,), p=pi)
+        def sample_from_softmax(mu, sig, _pi):
+            # softmax_with_tau
+            _pi = torch.exp(torch.log(_pi) / tau)
+            pi = _pi / torch.sum(_pi, dim=1)
 
             mu = torch.squeeze(mu).detach().cpu().numpy()
             sig = torch.squeeze(sig).detach().cpu().numpy()
             pi = torch.squeeze(pi).detach().cpu().numpy()
-            k = pi.argmax(axis=1)
+            k = np.random.choice(self.args.n_gauss, p=pi)
 
             indices = (np.arange(n_sample), k)
             rn = np.random.randn(n_sample)
@@ -67,7 +67,7 @@ class ARMDN(Network):
             mu = torch.squeeze(mu)
             sig = torch.squeeze(torch.exp(_sig))
             _pi = torch.squeeze(_pi)
-            _z_i = sample_gumbel(mu, sig, _pi)
+            _z_i = sample_from_softmax(mu, sig, _pi)
 
             one = torch.ones((n_sample, 1, 1)).cuda()
             _z_i_mask = torch.cat((_z_i, one), dim=1)
