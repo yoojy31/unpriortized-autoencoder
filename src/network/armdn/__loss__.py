@@ -10,10 +10,6 @@ def mdn_loss_fn(z, mu, sig, pi):
     return torch.mean(result)
 
 def gaussian_pdf(z, mu, sig):
-    # print(z.shape)
-    # print(mu.shape)
-    # print(sig.shape)
-    # exit()
     # make |mu|=K copies of y, subtract mu, divide by sigma
     result = (z.expand_as(mu) - mu) / sig
     result = -0.5 * (result * result)

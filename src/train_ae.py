@@ -9,6 +9,7 @@ from tensorboardX import SummaryWriter
 import utils
 import option
 import eval_ae
+from interpolation import interpolate_z
 
 def train():
     # Create result directories------------------------------------------------------------------
@@ -29,9 +30,10 @@ def train():
     ae.cuda()
 
     # Load dataset-------------------------------------------------------------------------------
-    dataset_cls = option.dataset_dict[args.dataset]
-    train_dataset = dataset_cls(args, args.train_set_path)
-    valid_dataset = dataset_cls(args, args.valid_set_path)
+    train_dataset_cls = option.dataset_dict[args.train_dataset]
+    valid_dataset_cls = option.dataset_dict[args.valid_dataset]
+    train_dataset = train_dataset_cls(args, args.train_set_path, True)
+    valid_dataset = valid_dataset_cls(args, args.valid_set_path, True)
 
     train_data_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size,shuffle=True, num_workers=8)
@@ -43,7 +45,9 @@ def train():
     valid_logger = SummaryWriter(result_dir_dict['valid'])
     eval_logger = SummaryWriter(result_dir_dict['eval'])
 
-    # Training-----------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------------
+    # Training ----------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------------
     num_batch = train_data_loader.__len__()
     x_save = next(iter(valid_data_loader))['image'].cuda()
     for e in range(args.init_epoch, args.max_epoch + 1):
@@ -52,15 +56,19 @@ def train():
         ae.train(mode=False)
         _x_save = ae.forward(x_save, forward_type='autoencoder')
         save_img_dir = os.path.join(result_dir_dict['img'], 'epoch-%d' % e)
-        utils.save_img_batch(save_img_dir, x_save, valid_dataset.post_processing, 'input_img')
-        utils.save_img_batch(save_img_dir, _x_save, valid_dataset.post_processing, 'recon_img')
+        utils.save_img_batch(save_img_dir, x_save, valid_dataset.post_process, 'input_img')
+        utils.save_img_batch(save_img_dir, _x_save, valid_dataset.post_process, 'recon_img')
+        interpolate_z(x_save, ae, save_img_dir, valid_dataset)
+        if 'ae1' in args.ae:
+            _x_save = ae.forward(x_save, forward_type='autoencoder', dout=0.0)
+            utils.save_img_batch(save_img_dir, _x_save, valid_dataset.post_process, 'recon_img(wo_dout)')
 
         # Evalutaion-----------------------------------------------------------------------------
         if e % args.eval_epoch_intv == 0:
             ae.train(mode=False)
             for param in train_params:
                 param.requires_grad = False
-            eval_loss_dict = eval_ae.evalate(ae, valid_data_loader)
+            eval_loss_dict = eval_ae.evaluate(ae, valid_data_loader)
 
             global_step = e * num_batch
             for key, value in eval_loss_dict.items():
@@ -102,7 +110,8 @@ def train():
             x = train_batch_dict['image'].cuda()
             x.requires_grad_(True)
 
-            ae.train(mode=True)
+            ae.encoder.train(mode=True)
+            ae.decoder.train(mode=True)
             train_loss_dict = ae.forward(x, forward_type='all')
             total_loss = 0
             for key, value in train_loss_dict.items():

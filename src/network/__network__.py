@@ -30,10 +30,13 @@ class Network(abc.ABC, nn.Module):
             return False
 
     def load(self, load_dir):
-        file_name = self.__class__.__name__ + '.pth'
-        model_path = os.path.join(load_dir, file_name)
-        if os.path.exists(model_path):
-            self.load_state_dict(torch.load(model_path))
-            return True
+        if os.path.exists(load_dir):
+            file_name = self.__class__.__name__ + '.pth'
+            model_path = os.path.join(load_dir, file_name)
+            if os.path.exists(model_path):
+                self.load_state_dict(torch.load(model_path))
+                return True
+            else:
+                return False
         else:
             return False

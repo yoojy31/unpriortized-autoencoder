@@ -1,4 +1,8 @@
 from tqdm import tqdm
+import option
+
+def main():
+    pass
 
 def evaluate(armdn, ae, data_loader):
     accum_mdn_loss = 0
@@ -8,12 +12,17 @@ def evaluate(armdn, ae, data_loader):
         x = batch_dict['image'].cuda()
         x.requires_grad_(False)
 
-        z = ae.forward(x, forward_type='encoder')
-        mu, sig, pi = armdn.forward(z)
-        mdn_loss = armdn.calc_loss(z, mu, sig, pi)
+        if ae is not None:
+            z = ae.forward(x, forward_type='encoder', dout=0.0)
+            x = z
+        mu, sig, pi = armdn.forward(x)
+        mdn_loss = armdn.calc_loss(x, mu, sig, pi)
 
         accum_mdn_loss += mdn_loss.item()
         data_loader_pbar.set_description(
             '[evalation] mdn:%.5f |' % (accum_mdn_loss / (b+1)))
     mdn_loss = accum_mdn_loss / data_loader.__len__()
     return mdn_loss
+
+if __name__ == "__main__":
+    main()

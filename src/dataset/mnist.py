@@ -6,9 +6,10 @@ from .__dataset__ import ImgDataset
 
 class MNIST(ImgDataset):
 
-    def __init__(self, args, dataset_path):
-        self.img_size = (args.img_size, args.img_size)
-        self.code_size = args.code_size
+    def __init__(self, args, dataset_path, pre_processing=True):
+        self.args = args
+        self.dataset_root = dataset_path
+        self.pre_processing = pre_processing
 
         img_file_path = dataset_path
         lab_file_path = dataset_path.replace(
@@ -46,15 +47,16 @@ class MNIST(ImgDataset):
         return self.num_imgs
 
     def __getitem__(self, idx):
-        x = self.preprocessing(self.img_list[idx])
+        x = self.img_list[idx]
+        x = self.pre_process(x) if self.pre_processing else x
         y = self.lab_list[idx]
-        s = torch.zeros(self.code_size, 1, 1)
-        return {'x': x, 'y': y, 's': s}
+        # s = torch.zeros(self.code_size, 1, 1)
+        return {'x': x, 'y': y} #, 's': s}
 
-    def preprocessing(self, x):
-        if self.img_size is not None:
+    def pre_process(self, x):
+        if self.args.img_size is not None:
             x = scipy.misc.imresize(
-                x, self.img_size,
+                x, self.args.img_size,
                 interp='bicubic')
 
         x = (x / 127.5) - 1
@@ -62,9 +64,9 @@ class MNIST(ImgDataset):
         x = torch.from_numpy(x).float()
         return x
 
-    def inv_preprocessing(self, x):
+    def post_process(self, x):
         x = torch.clamp(x, min=-1, max=1)
-        x = x.cpu().detach().numpy()
+        x = x.detach().numpy()
         x = np.transpose(x, (1, 2, 0))
         x = np.squeeze(x)
         x = (x + 1) * 127.5

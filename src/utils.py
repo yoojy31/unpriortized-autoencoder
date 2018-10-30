@@ -46,11 +46,13 @@ def print_ordered_dict(ordered_dict, indent='', tag='tag'):
         indent_ = indent + '\t'
         print_ordered_dict(item_dict, indent=indent_, tag=key)
 
-def save_img_batch(save_dir, imgs, processing, tag):
+def save_img_batch(save_dir, imgs, post_process, tag):
     make_dir(save_dir)
 
     for i, img in enumerate(imgs):
-        img = processing(img)
+        if img.is_cuda:
+            img = img.cpu()
+        img = post_process(img)
         save_data_path = os.path.join(save_dir, '%03d-%s.png' % (i, tag))
         scipy.misc.imsave(save_data_path, img)
 
