@@ -4,18 +4,18 @@ import torchvision
 class PerceptualLoss(torch.nn.Module):
     def __init__(self):
         super(PerceptualLoss, self).__init__()
-        vgg19_features = torchvision.models.vgg19_bn(pretrained=True).features
+        vgg19_features = torchvision.models.vgg19(pretrained=True).features
         for param in vgg19_features.parameters():
             param.requires_grad = False
 
         # VGG19
-        # self.vgg19_relu1_1 = vgg19_features[:2]
-        # self.vgg19_relu2_1 = vgg19_features[2:7]
-        # self.vgg19_relu3_1 = vgg19_features[7:11]
+        self.vgg19_relu1_1 = vgg19_features[:2]
+        self.vgg19_relu2_1 = vgg19_features[2:7]
+        self.vgg19_relu3_1 = vgg19_features[7:11]
         # VGG19-BN
-        self.vgg19_relu1_1 = vgg19_features[:3]
-        self.vgg19_relu2_1 = vgg19_features[3:10]
-        self.vgg19_relu3_1 = vgg19_features[10:17]
+        # self.vgg19_relu1_1 = vgg19_features[:3]
+        # self.vgg19_relu2_1 = vgg19_features[3:10]
+        # self.vgg19_relu3_1 = vgg19_features[10:17]
 
         self.mean = torch.FloatTensor([0.485, 0.456, 0.406]).cuda()
         self.std = torch.FloatTensor([0.229, 0.224, 0.225]).cuda()
@@ -48,8 +48,8 @@ class PerceptualLoss(torch.nn.Module):
         relu1_1_mse = torch.nn.functional.mse_loss(_x_relu1_1, x_relu1_1)
         relu2_1_mse = torch.nn.functional.mse_loss(_x_relu2_1, x_relu2_1)
         relu3_1_mse = torch.nn.functional.mse_loss(_x_relu3_1, x_relu3_1)
-        perc_loss = relu1_1_mse + 10 * relu2_1_mse + 100 * relu3_1_mse
-        # perc_loss = 0.5 * (relu1_1_mse + relu2_1_mse + relu3_1_mse)
+        # perc_loss = relu1_1_mse + 10 * relu2_1_mse + 100 * relu3_1_mse
+        perc_loss = 0.5 * (relu1_1_mse + relu2_1_mse + relu3_1_mse)
         # VGG19: tensor(0.3828, device='cuda:1') tensor(3.3571, device='cuda:1') tensor(70.6274, device='cuda:1')
         # VGG19-BN: tensor(0.022634, device='cuda:1') tensor(0.022329, device='cuda:1') tensor(0.023558, device='cuda:1')
         return perc_loss

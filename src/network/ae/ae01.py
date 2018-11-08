@@ -2,7 +2,7 @@ import math
 import torch.nn as nn
 from .__ae__ import Autoencoder
 
-class Autoencoder00(Autoencoder):
+class Autoencoder01(Autoencoder):
     def build(self):
         num_blocks = int(math.log2(self.args.img_size)) - 1
         #       8   16   32   64   128   256   512
@@ -21,6 +21,7 @@ class Autoencoder00(Autoencoder):
                 encoder.append(nn.LeakyReLU(0.2, inplace=True))
             elif i == (num_blocks - 1):
                 encoder.append(nn.Conv2d(nfs[i], nfs[i+1], z_k_size, 1, 0, bias=True))
+                encoder.append(nn.Tanh())
             else:
                 encoder.append(nn.Conv2d(nfs[i], nfs[i+1], 4, 2, 1, bias=True))
                 encoder.append(nn.BatchNorm2d(nfs[i+1], affine=True))

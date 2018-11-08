@@ -1,17 +1,19 @@
 import torch.nn as nn
 from .__ae__ import forward_types
-from .ae00 import Autoencoder00
+from .ae01 import Autoencoder01
 
-class Autoencoder10(Autoencoder00):
+class Autoencoder10(Autoencoder01):
     # autoencoder with dropout
 
     def dropout(self, z, dout):
         z = nn.functional.dropout2d(z, p=dout, training=True)
         return z
 
-    def forward(self, x, _x=None, forward_type=forward_types[0], dout=0.5):
+    def forward(self, x, _x=None, forward_type=forward_types[0], dout=None):
         assert (self.encoder and self.decoder) is not None
         assert forward_type in forward_types
+        if dout is None:
+            dout = self.args.z_dout_rate
 
         # all
         if forward_type == forward_types[0]:

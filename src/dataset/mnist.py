@@ -51,23 +51,26 @@ class MNIST(ImgDataset):
         x = self.pre_process(x) if self.pre_processing else x
         y = self.lab_list[idx]
         # s = torch.zeros(self.code_size, 1, 1)
-        return {'x': x, 'y': y} #, 's': s}
+        return {'image': x, 'label': y} #, 's': s}
 
     def pre_process(self, x):
+        size = (self.args.img_size, self.args.img_size)
         if self.args.img_size is not None:
             x = scipy.misc.imresize(
-                x, self.args.img_size,
-                interp='bicubic')
-
+                x, size, interp='bicubic')
         x = (x / 127.5) - 1
         x = np.expand_dims(x, axis=0)
         x = torch.from_numpy(x).float()
         return x
 
+
     def post_process(self, x):
         x = torch.clamp(x, min=-1, max=1)
+        if x.is_cuda:
+            x = x.cpu()
         x = x.detach().numpy()
-        x = np.transpose(x, (1, 2, 0))
         x = np.squeeze(x)
+        # x = np.transpose(x, (1, 2, 0))
+        # print(x.shape)
         x = (x + 1) * 127.5
         return x

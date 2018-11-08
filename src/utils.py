@@ -1,6 +1,7 @@
 import os
 import sys
 from collections import OrderedDict
+import random
 import scipy
 import torch
 
@@ -86,7 +87,31 @@ def decay_lr(optim, decay_rate):
         pre_lr = param_group['lr']
         new_lr = pre_lr * decay_rate
         param_group['lr'] = new_lr
-    print('learning rate decay: %f --> %f' % (pre_lr, new_lr))
+    print('learning rate decay: %f --> %f (rate: %f)' % (pre_lr, new_lr, decay_rate))
+
+def drop_pixel(x, input_drop=0.5):
+    prob = torch.ones(x[:, 0:1, :, :].shape).cuda() * input_drop
+    mask = torch.bernoulli(1 - prob)
+    x_crpt = x * mask
+    return x_crpt
+
+def drop_patch(x, input_drop=0.5):
+    size = x.shape
+    b, h, w = size[0], size[2], size[3]
+    n_drop_pix = h * w * input_drop
+
+    x_crpt = x.clone()
+    for i in range(b):
+        min_patch_h = int(n_drop_pix / w)
+        patch_h = random.randint(min_patch_h, h)
+        patch_w = int(n_drop_pix / patch_h)
+
+        offset_y = random.randint(0, h - patch_h)
+        offset_x = random.randint(0, w - patch_w)
+        x_crpt[i, :,
+            offset_y:(offset_y + patch_h),
+            offset_x:(offset_x + patch_w)] = 0
+    return x_crpt
 
 def forward_masked_z(decoder, z):
     code_size = z.shape[1]

@@ -21,14 +21,14 @@ class Autoencoder(Network):
         self.decoder_name = self.__class__.__name__ + '.decoder'
 
     def calc_loss(self, _x, x):
-        mse_loss = self.args.mse_w * nn.functional.mse_loss(_x, x)
+        pixel_loss = self.args.mse_w * nn.functional.mse_loss(_x, x)
         if self.args.perc_w == 0:
-            perc_loss = torch.zeros(mse_loss.shape).cuda()
+            perc_loss = torch.zeros(pixel_loss.shape).cuda()
         else:
             perc_loss = self.args.perc_w * self.perc_fn.forward(_x, x)
 
         loss_dict = OrderedDict()
-        loss_dict['mse'] = mse_loss
+        loss_dict['pixel'] = pixel_loss
         loss_dict['perc'] = perc_loss
         return loss_dict
 

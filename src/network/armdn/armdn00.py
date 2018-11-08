@@ -5,9 +5,10 @@ from .__armdn__ import ARMDN
 
 class ARMDN00(ARMDN):
     def build(self):
-        num_blocks = int(math.log2(self.args.z_size)) + 1
-        #      1  2   4   8  16   32   64  128   256   512, 1024
-        nfs = (2, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096)
+        num_blocks = math.ceil(math.log2(self.args.z_size)) + 1
+        #      1   2   4   8  16   32   64  128   256   512
+        nfs = (2,  8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096)
+        # nfs = (2, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096)
         nfs = nfs[:num_blocks] + (self.args.n_gauss * 3,)
 
         armdn = list()
@@ -25,7 +26,7 @@ class ARMDN00(ARMDN):
                     stride=1, dilation=2**i, bias=True))
                 # armdn.append(OptimizedDilatedConv1d(
                 #     nfs[i], nfs[i+1], dilation=2**i))
-                # armdn.append(nn.BatchNorm1d(nfs[i+1]))
+                armdn.append(nn.BatchNorm1d(nfs[i+1]))
                 armdn.append(nn.LeakyReLU(0.2))
         self.armdn = nn.Sequential(*armdn)
 
