@@ -3,7 +3,7 @@
 # --patch_drop \
 # --ordering
 # LOAD_SNAPSHOT_DIR='result/training/celeba/64x64/256/ae/20181031-222508-ae11-(64-0.5)-mse1.0-perc0.1/snapshot/epoch-100'
-RESULT_DIR=./result/training/mnist/28x28/16/ae/`(date "+%Y%m%d-%H%M%S")`-'ae00(mse1.0)-(mwup64)'
+RESULT_DIR=./result/training/mnist/28x28/8/ae/`(date "+%Y%m%d-%H%M%S")`-'ae00(mse1.0)-(mwup8)'
 
 mkdir $RESULT_DIR
 mkdir $RESULT_DIR/copy
@@ -15,10 +15,10 @@ python3 ./src/train_ae.py \
 \
 --ae=ae00 \
 \
---z_size=16 \
---static_z_size=16 \
+--z_size=8 \
+--static_z_size=8 \
 --z_dout_rate=0.0 \
---z_mask_warm_up=64 \
+--z_mask_warm_up=8 \
 \
 --train_dataset=mnist \
 --valid_dataset=mnist \

@@ -3,17 +3,19 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
-from mlxtend.plotting import category_scatter
-# import matplotlib.patches as mpatches
+import matplotlib.patches as mpatches
 import torch
 import utils
 import option
 
-MNIST_NAME = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
-MNIST_COLOR = ('gray', 'purple', 'blue', 'pink',
-    'brown', 'orange', 'green', 'magenta', 'cyan', 'black')
-TWO_NAME = ('0', '1')
-TWO_COLOR = ('blue', 'orange')
+two_labels = ('0', '1')
+mnist_labels = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
+tableau20 = np.array(
+    ((31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),
+    (44, 160, 44), (152, 223, 138), (214, 39, 40), (255, 152, 150),
+    (148, 103, 189), (197, 176, 213), (140, 86, 75), (196, 156, 148),
+    (227, 119, 194), (247, 182, 210), (127, 127, 127), (199, 199, 199),
+    (188, 189, 34), (219, 219, 141), (23, 190, 207), (158, 218, 229))) / 255
 
 def main():
     utils.make_dir(args.result_dir)
@@ -54,40 +56,45 @@ def main():
     else:
         y = None
 
-    if args.dataset == 'mnist':
-        colors = MNIST_COLOR
+    if args.dataset == 'mnist' or args.dataset == 'cifar':
+        labels = mnist_labels
     elif args.dataset == 'two':
-        colors = TWO_COLOR
+        labels = two_labels
     else:
-        colors = {'gray'}
+        labels = None
 
     print('start pca')
-    draw_scatter_plot(z, y, save_dir=args.result_dir, projection='PCA', colors=colors)
+    draw_scatter_plot(z, y, save_dir=args.result_dir, projection='PCA', colors=tableau20, labels=labels)
     print('save pca result\n')
 
-    # half = int(z.shape[0] / 2)
     # print('start tsne')
-    # draw_scatter_plot(z[:half], y[:half], save_dir=args.result_dir, projection='TSNE', colors=colors)
+    # subset = int(z.shape[0] / 2)
+    # draw_scatter_plot(z[:subset], y[:subset], save_dir=args.result_dir, projection='TSNE', colors=colors)
     # print('save tsne result')
 
-def draw_scatter_plot(data, label, save_dir, projection='PCA', colors={'gray'}):
-    if data.shape[1] == 2:
+def draw_scatter_plot(x, y, save_dir, projection='PCA', colors={'gray'}, labels=None):
+    if x.shape[1] == 2:
         projection = 'none'
     elif projection == 'PCA':
         pca = PCA(n_components=2)
-        data = pca.fit_transform(data)
+        x = pca.fit_transform(x)
     elif projection == 'TSNE':
-        tsne = TSNE(learning_rate=100)
-        data = tsne.fit_transform(data)
+        tsne = TSNE(n_components=2, learning_rate=100)
+        x = tsne.fit_transform(x)
     else:
         assert projection in ('PCA', 'TSNE')
-    label = np.expand_dims(label, axis=1)
-    data = np.concatenate((label, data), axis=1)
 
-    # category_scatter(x=1, y=2, label_col=0, data=data, markers='o', markersize=3, colors=colors, legend_loc='upper right')
-    category_scatter(x=1, y=2, label_col=0, data=data, markers='o', markersize=3, colors=colors, legend_loc='upper right')
-    # plt.xlim(-4, 4)
-    # plt.ylim(-4, 4)
+    for i in range(x.shape[0]):
+        # color = (colors[int(y[i])][0] / 255, colors[int(y[i])][1] / 255, colors[int(y[i])][2] / 255)
+        plt.plot(x[i, 0], x[i][1], color=colors[int(y[i])], marker='o', markersize=2)
+
+    patch = []
+    if labels is not None:
+        for i in range(len(labels)):
+            label = labels[i]
+            patch.append(mpatches.Patch(color=colors[i], label=label))
+        plt.legend(handles=patch)
+
     plt.savefig(os.path.join(save_dir, 'scatter-plot_%s.png') % projection)
     # plt.show()
 
