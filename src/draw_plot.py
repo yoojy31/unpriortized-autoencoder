@@ -67,10 +67,10 @@ def main():
     draw_scatter_plot(z, y, save_dir=args.result_dir, projection='PCA', colors=tableau20, labels=labels)
     print('save pca result\n')
 
-    # print('start tsne')
-    # subset = int(z.shape[0] / 2)
-    # draw_scatter_plot(z[:subset], y[:subset], save_dir=args.result_dir, projection='TSNE', colors=colors)
-    # print('save tsne result')
+    print('start tsne')
+    subset = int(z.shape[0] / 1)
+    draw_scatter_plot(z[:subset], y[:subset], save_dir=args.result_dir, projection='TSNE', colors=tableau20, labels=labels)
+    print('save tsne result')
 
 def draw_scatter_plot(x, y, save_dir, projection='PCA', colors={'gray'}, labels=None):
     if x.shape[1] == 2:
@@ -79,7 +79,7 @@ def draw_scatter_plot(x, y, save_dir, projection='PCA', colors={'gray'}, labels=
         pca = PCA(n_components=2)
         x = pca.fit_transform(x)
     elif projection == 'TSNE':
-        tsne = TSNE(n_components=2, learning_rate=100)
+        tsne = TSNE(n_components=2, perplexity=100, learning_rate=200, n_iter=5000)
         x = tsne.fit_transform(x)
     else:
         assert projection in ('PCA', 'TSNE')

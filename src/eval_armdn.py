@@ -4,7 +4,7 @@ import option
 def main():
     pass
 
-def evaluate(armdn, ae, data_loader):
+def evaluate(armdn, ae, data_loader, gmmn=False):
     accum_mdn_loss = 0
     data_loader_pbar = tqdm(data_loader)
 
@@ -15,8 +15,13 @@ def evaluate(armdn, ae, data_loader):
         if ae is not None:
             z = ae.forward(x, forward_type='encoder', dout=0.0)
             x = z
-        mu, sig, pi = armdn.forward(x)
-        mdn_loss = armdn.calc_loss(x, mu, sig, pi)
+
+        if not gmmn:
+            mu, sig, pi = armdn.forward(x)
+            mdn_loss = armdn.calc_loss(x, mu, sig, pi)
+        else:
+            _z = armdn.forward(x.shape[0])
+            mdn_loss = armdn.calc_loss(_z, x)
 
         accum_mdn_loss += mdn_loss.item()
         data_loader_pbar.set_description(

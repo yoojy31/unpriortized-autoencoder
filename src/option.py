@@ -15,6 +15,8 @@ network_dict = {
     'lae00': network.ae.LadderAutoencoder00,
 
     'armdn00': network.armdn.ARMDN00,
+    'gmmn': network.armdn.GMMN,
+
     'none': None,
     None: None,
 }

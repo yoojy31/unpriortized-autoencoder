@@ -74,6 +74,7 @@ def train():
         armdn.set_order(order)
         print('[z_order]', armdn.order)
 
+    gmmn = True if args.armdn == 'gmmn' else False
     num_batch = train_data_loader.__len__()
     for e in range(args.init_epoch, args.max_epoch + 1):
 
@@ -93,7 +94,7 @@ def train():
             for param in train_params:
                 param.requires_grad = False
 
-            eval_mse_loss = eval_armdn.evaluate(armdn, ae, valid_data_loader)
+            eval_mse_loss = eval_armdn.evaluate(armdn, ae, valid_data_loader, gmmn)
             global_step = e * num_batch
             eval_logger.add_scalar('mdn_loss', eval_mse_loss, global_step)
 
@@ -137,8 +138,14 @@ def train():
                 x = z
 
             armdn.train(mode=True)
-            mu, sig, pi = armdn.forward(x)
-            train_mdn_loss = armdn.calc_loss(x, mu, sig, pi)
+            if not gmmn:
+                mu, sig, pi = armdn.forward(x)
+                train_mdn_loss = armdn.calc_loss(x, mu, sig, pi)
+            else:
+                _z = armdn.forward(x.shape[0])
+                train_mdn_loss = armdn.calc_loss(_z, x)
+            # mu, sig, pi = armdn.forward(x)
+            # train_mdn_loss = armdn.calc_loss(x, mu, sig, pi)
 
             optim.zero_grad()
             train_mdn_loss.backward()
@@ -159,8 +166,12 @@ def train():
                     x = z
 
                 armdn.train(mode=False)
-                mu, sig, pi = armdn.forward(x)
-                valid_mdn_loss = armdn.calc_loss(x, mu, sig, pi)
+                if not gmmn:
+                    mu, sig, pi = armdn.forward(x)
+                    valid_mdn_loss = armdn.calc_loss(x, mu, sig, pi)
+                else:
+                    _z = armdn.forward(x.shape[0])
+                    valid_mdn_loss = armdn.calc_loss(_z, x)
                 valid_logger.add_scalar('mdn_loss', valid_mdn_loss.item(), global_step)
 
             # Set description and write log------------------------------------------------------
