@@ -30,8 +30,8 @@ class ARMDN(Network):
                 z[i] = z_realign[o_i]
             return z
 
-    def calc_loss(self, z, mu, sig, pi):
-        mdn_loss = mdn_loss_fn(z, mu, sig, pi)
+    def calc_loss(self, z, mu, sig, pi, average=True):
+        mdn_loss = mdn_loss_fn(z, mu, sig, pi, average=average)
         return mdn_loss
 
     def forward(self, z, tau=1.0):

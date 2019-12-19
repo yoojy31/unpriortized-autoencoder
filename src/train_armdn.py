@@ -9,6 +9,7 @@ from tensorboardX import SummaryWriter
 import utils
 import option
 import eval_armdn
+from kde import kde_eval_mnist, kde_eval_tfd
 
 def train():
     # Create result directories------------------------------------------------------------------
@@ -43,15 +44,21 @@ def train():
     # Load dataset-------------------------------------------------------------------------------
     train_dataset_cls = option.dataset_dict[args.train_dataset]
     valid_dataset_cls = option.dataset_dict[args.valid_dataset]
+    test_dataset_cls = option.dataset_dict[args.test_dataset]
     train_dataset = train_dataset_cls(args, args.train_set_path, True)
     valid_dataset = valid_dataset_cls(args, args.valid_set_path, True)
+    test_dataset = test_dataset_cls(args, args.test_set_path, True)
 
     train_data_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size,
-        shuffle=True, num_workers=8)
+        shuffle=True, num_workers=4)
     valid_data_loader = torch.utils.data.DataLoader(
         valid_dataset, batch_size=args.batch_size,
-        shuffle=False, num_workers=4)
+        shuffle=False, num_workers=2)
+    test_data_loader = torch.utils.data.DataLoader(
+        test_dataset, batch_size=100, # args.batch_size,
+        shuffle=False, num_workers=2)
+    # print(test_dataset.__len__())
 
     # Create logger------------------------------------------------------------------------------
     train_logger = SummaryWriter(result_dir_dict['train'])
@@ -62,7 +69,7 @@ def train():
     # Training ----------------------------------------------------------------------------------
     # -------------------------------------------------------------------------------------------
     if ae_class is not None:
-        ae.encoder.train(mode=True)
+        ae.encoder.train(mode=False)
         ae.decoder.train(mode=False)
         for param in ae.parameters():
             param.requires_grad = False
@@ -94,9 +101,27 @@ def train():
             for param in train_params:
                 param.requires_grad = False
 
-            eval_mse_loss = eval_armdn.evaluate(armdn, ae, valid_data_loader, gmmn)
+            eval_mse_loss, _ = eval_armdn.evaluate(armdn, ae, test_data_loader, gmmn)
             global_step = e * num_batch
             eval_logger.add_scalar('mdn_loss', eval_mse_loss, global_step)
+
+            if args.test_dataset == 'two':
+                eval_armdn.evaluate_two(armdn, ae, test_data_loader)
+
+            # if e >= 0:
+            #     if (ae_class is not None) and (args.test_dataset == 'mnist2' or args.test_dataset == 'tfd'):
+            #         log_prob, std, sigma = kde_eval_mnist(
+            #             ae, armdn, valid_data_loader, sigma_range=np.arange(0.1, 0.3, 0.01))
+            #
+            #         # MNIST: sigma_range=np.arange(0.1, 0.3, 0.01)
+            #         # TFD: sigma_range=np.arange(0.001, 0.200, 0.005)
+            #         test_log_prob, test_std, _ = kde_eval_mnist(
+            #             ae, armdn, test_data_loader, sigma_range=[sigma])
+            #         # log_prob, std, sigma = kde_eval_mnist(train_data_loader, test_data_loader)
+            #         # test_log_prob, test_std, _ = \
+            #         #     kde_eval_mnist(valid_data_loader, test_data_loader, sigma_range=[sigma], verbose=False)
+            #         print('\tValidation: %.2f (%.2f), sigma: %.2f' % (log_prob, std, sigma))
+            #         print('\tTest      : %.2f (%.2f)\n' % (test_log_prob, test_std))
 
         # Learning rate decay--------------------------------------------------------------------
         if e in args.lr_decay_epochs:

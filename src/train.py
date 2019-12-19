@@ -118,7 +118,7 @@ def train():
             param.requires_grad = True
         valid_set_cycle = itertools.cycle(valid_data_loader)
         train_loader_pbar = tqdm(train_data_loader)
-        accum_batching_time =   0
+        accum_batching_time = 0
         accum_training_time = 0
 
         # Get batch dict-------------------------------------------------------------------------

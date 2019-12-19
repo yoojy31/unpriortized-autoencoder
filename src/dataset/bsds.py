@@ -42,7 +42,11 @@ class BSDS(ImgDataset):
         #       to the brightness of each pixel. We then divided by 256,
         #       making the pixels take continuous values in the range [0, 1].
         # 3.    We subtracted the mean pixel value from each patch.
-        # 4.    All of the results in this section were obtained by fitting
+        # 4.    The average intensity of each patch was subtracted from
+        #       each pixel’s value. After this, all datapoints lay on a 63-
+        #       dimensional subspace, for this reason only 63 pixels were
+        #       modelled, discarding the bottom-right pixel.
+        # 5.    All of the results in this section were obtained by fitting
         #       the pixels in a raster-scan order.
         img = x[0]
         ppi = x[1]
@@ -53,7 +57,7 @@ class BSDS(ImgDataset):
             noise = np.random.uniform(low=0.0, high=1.0, size=patch.shape)
             patch = (patch.astype(np.float) + noise) / 256
             patch = patch - np.mean(patch)
-            patches[i] = np.reshape(patch, newshape=(64))
+            patches[i] = np.reshape(patch, newshape=(64))[:63]
         return patches
 
 class AugmentedBSDS(ImgDataset):

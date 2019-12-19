@@ -28,9 +28,6 @@ python3 ./src/eval_armdn.py \
 --result_dir=$RESULT_DIR \
 \
 
-
-
-
 # eval_parser.add_argument('--devices', type=str, default='0')
 
 # eval_parser.add_argument('--ae', type=str, default=None, help=network_dict.keys())

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-python3 ./src/augment.py \
+python3 ./src/augment_bsds.py \
 \
 --dataset=bsds \
 --train_set_path=/mnt/storage/datasets/bsds/bsds300/image/train \

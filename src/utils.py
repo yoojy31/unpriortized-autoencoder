@@ -66,6 +66,10 @@ def load_optim(optim, load_dir, tag=None):
     optim_path = os.path.join(load_dir, file_name)
     if os.path.exists(optim_path):
         optim.load_state_dict(torch.load(optim_path))
+        for state in optim.state.values():
+            for k, v in state.items():
+                if isinstance(v, torch.Tensor):
+                    state[k] = v.cuda()
         return True
     else:
         return False

@@ -7,8 +7,8 @@ class ARMDN00(ARMDN):
     def build(self):
         num_blocks = math.ceil(math.log2(self.args.z_size)) + 1
         #      1   2   4   8  16   32   64  128   256   512
-        nfs = (2,  8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096)
-        # nfs = (2, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096)
+        nfs = (2, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096)
+        # nfs = (2,  8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096)
         nfs = nfs[:num_blocks] + (self.args.n_gauss * 3,)
 
         armdn = list()

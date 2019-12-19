@@ -33,13 +33,18 @@ def train():
     # Load dataset-------------------------------------------------------------------------------
     train_dataset_cls = option.dataset_dict[args.train_dataset]
     valid_dataset_cls = option.dataset_dict[args.valid_dataset]
+    test_dataset_cls = option.dataset_dict[args.test_dataset]
     train_dataset = train_dataset_cls(args, args.train_set_path, True)
     valid_dataset = valid_dataset_cls(args, args.valid_set_path, True)
+    test_dataset = test_dataset_cls(args, args.test_set_path, True)
 
     train_data_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size,
         shuffle=True, num_workers=8)
     valid_data_loader = torch.utils.data.DataLoader(
+        valid_dataset, batch_size=args.batch_size,
+        shuffle=False, num_workers=1)
+    test_data_loader = torch.utils.data.DataLoader(
         valid_dataset, batch_size=args.batch_size,
         shuffle=False, num_workers=4)
 
@@ -52,16 +57,16 @@ def train():
     # Training ----------------------------------------------------------------------------------
     # -------------------------------------------------------------------------------------------
     num_batch = train_data_loader.__len__()
-    x_save = next(iter(valid_data_loader))['image'].cuda()
+    x_save = next(iter(test_data_loader))['image'].cuda()
     for e in range(args.init_epoch, args.max_epoch + 1):
 
         # Save result images --------------------------------------------------------------------
         ae.train(mode=False)
         _x_save = ae.forward(x_save, forward_type='autoencoder')
         save_img_dir = os.path.join(result_dir_dict['img'], 'epoch-%d' % e)
-        utils.save_img_batch(save_img_dir, x_save, valid_dataset.post_process, 'input_img')
-        utils.save_img_batch(save_img_dir, _x_save, valid_dataset.post_process, 'recon_img')
-        interpolate_z(x_save, ae, ((0, 17), (31, 38), (4, 24), (11, 45)), save_img_dir, valid_dataset)
+        utils.save_img_batch(save_img_dir, x_save, test_dataset.post_process, 'input_img')
+        utils.save_img_batch(save_img_dir, _x_save, test_dataset.post_process, 'recon_img')
+        interpolate_z(x_save, ae, ((0, 17), (31, 38), (4, 24), (11, 45)), save_img_dir, test_dataset)
 
         # Evalutaion-----------------------------------------------------------------------------
         if e % args.eval_epoch_intv == 0:
@@ -69,7 +74,7 @@ def train():
             for param in train_params:
                 param.requires_grad = False
 
-            ae_eval_loss_dict = eval_ae.evaluate(ae, valid_data_loader)
+            ae_eval_loss_dict = eval_ae.evaluate(ae, test_data_loader)
             global_step = e * num_batch
             for key, value in ae_eval_loss_dict.items():
                 eval_logger.add_scalar(key, value, global_step)

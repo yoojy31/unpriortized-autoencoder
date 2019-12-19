@@ -69,7 +69,6 @@ def evaluate(ae, data_loader, armdn=None, likelihood=False):
     mean_loss_dict = accum_loss_dict
     return mean_loss_dict
 
-
 def cal_likelihood_x(ae, armdn, x, z_sampling=1):
     mu, sig = ae.forward(x, forward_type='encoder')
 

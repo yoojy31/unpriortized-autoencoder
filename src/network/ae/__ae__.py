@@ -39,6 +39,8 @@ class Autoencoder(Network):
         assert (self.encoder and self.decoder) is not None
         assert forward_type in forward_types
 
+        # print(x.shape)
+
         # all
         if forward_type == forward_types[0]:
             z = self.encoder.forward(x)

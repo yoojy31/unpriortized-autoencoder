@@ -1,10 +1,11 @@
+import os
 from struct import unpack
 import numpy as np
 import scipy.misc
 import torch
 from .__dataset__ import ImgDataset
 
-class MNIST(ImgDataset):
+class MNIST1(ImgDataset):
 
     def __init__(self, args, dataset_path, pre_processing=True):
         self.args = args
@@ -54,15 +55,18 @@ class MNIST(ImgDataset):
         return {'image': x, 'label': y} #, 's': s}
 
     def pre_process(self, x):
-        size = (self.args.img_size, self.args.img_size)
-        if self.args.img_size is not None:
-            x = scipy.misc.imresize(
-                x, size, interp='bicubic')
+        # size = (self.args.img_size, self.args.img_size)
+        # if (self.args.img_size is not None) or \
+        #     (x.shape[0] == size[0] and x.shape[1] == size[1]):
+        #     x = scipy.misc.imresize(
+        #         x, size, interp='bicubic')
+        # print(x[12:17, 12:17])
+        x = np.expand_dims(x, axis=0).astype(np.float)
         x = (x / 127.5) - 1
-        x = np.expand_dims(x, axis=0)
         x = torch.from_numpy(x).float()
+        # print(x[0, 12:17, 12:17])
+        # exit()
         return x
-
 
     def post_process(self, x):
         x = torch.clamp(x, min=-1, max=1)
@@ -73,4 +77,41 @@ class MNIST(ImgDataset):
         # x = np.transpose(x, (1, 2, 0))
         # print(x.shape)
         x = (x + 1) * 127.5
+        return x
+
+class MNIST2(ImgDataset):
+    def __init__(self, args, dataset_path, pre_processing=True):
+        self.args = args
+        self.dataset_root = dataset_path
+        self.pre_processing = pre_processing
+        self.img_names = os.listdir(dataset_path)
+        self.num_imgs = len(self.img_names)
+
+    def __len__(self):
+        return self.num_imgs
+
+    def __getitem__(self, idx):
+        img_path = os.path.join(self.dataset_root, self.img_names[idx])
+        x = scipy.misc.imread(img_path, mode='L')
+        return {'image': self.pre_process(x) if self.pre_processing else x}
+
+    def pre_process(self, x):
+        if (self.args.img_size is not None) or \
+            (x.shape[0] == self.args.img_size and x.shape[1] == self.args.img_size):
+
+            size = (self.args.img_size, self.args.img_size)
+            x = scipy.misc.imresize(x, size, interp='bicubic')
+
+        x = np.expand_dims(x, axis=0)
+        x = x / 255
+        x = torch.from_numpy(x).float()
+        return x
+
+    def post_process(self, x):
+        x = torch.clamp(x, min=0, max=1)
+        if x.is_cuda:
+            x = x.cpu()
+        x = x.detach().numpy()
+        x = np.squeeze(x)
+        x = x * 255
         return x

@@ -32,7 +32,7 @@ def augment_bsds300():
     test_data_loader = torch.utils.data.DataLoader(
         test_dataset, batch_size=1, shuffle=False, num_workers=2)
 
-    train_ppi = int(1800000 / 180)
+    train_ppi = int(2700000 / 180)
     valid_ppi = int(1000 / 20)
     test_ppi = int(1000000 / 100)
 

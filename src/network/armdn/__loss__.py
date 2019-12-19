@@ -1,13 +1,16 @@
 import math
 import torch
 
-def mdn_loss_fn(z, mu, sig, pi):
+def mdn_loss_fn(z, mu, sig, pi, average=True):
     p_gauss = gaussian_pdf(z, mu, sig)
     # print(p_gauss.shape)
     result = pi * p_gauss
     result = torch.sum(result, dim=2)
     result = -torch.log(result + 1e-12)
-    return torch.mean(result)
+    if average:
+        return torch.mean(result)
+    else:
+        return torch.squeeze(result)
 
 def gaussian_pdf(z, mu, sig):
     # make |mu|=K copies of y, subtract mu, divide by sigma

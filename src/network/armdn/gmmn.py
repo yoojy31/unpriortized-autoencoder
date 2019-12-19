@@ -49,7 +49,7 @@ class GMMN(Network):
                 z[i] = z_realign[o_i]
             return z
 
-    def calc_loss(self, _z, z, sigma=[1]):
+    def calc_loss(self, _z, z, sigma=[0.001]):
         def get_scale_matrix(M, N):
             s1 = (torch.ones((N, 1)) * 1.0 / N).cuda()
             s2 = (torch.ones((M, 1)) * -1.0 / M).cuda()
