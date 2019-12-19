@@ -1,9 +1,6 @@
 #!/bin/bash
 
-# --patch_drop \
-# --ordering
 # LOAD_SNAPSHOT_DIR='./result/training/celeba/128x128/200/ae/20181110-133815-ae00(mse1.0-perc0.1)-(mwup0)/snapshot/epoch-150'
-# RESULT_DIR=./result/training/celeba/128x128/200/ae/`(date "+%Y%m%d-%H%M%S")`-'ae00(mse1.0)-(mwup100)'
 RESULT_DIR=./result/test
 
 mkdir $RESULT_DIR
@@ -42,25 +39,9 @@ python3 ./src/train_ae.py \
 \
 --perc_w=0.0 \
 \
---eval_epoch_intv=10 \
 --valid_iter_intv=50 \
 \
 --save_snapshot_epochs=30,50,70,90,110,130,150,160,170,180,190,200 \
 --result_dir=$RESULT_DIR \
 # --load_snapshot_dir=$LOAD_SNAPSHOT_DIR \
 
-#
-# --train_dataset=celeb \
-# --valid_dataset=celeb \
-# --test_dataset=celeb \
-# --train_set_path=./data/celeba/align-crop-128/train-valid \
-# --valid_set_path=./data/celeba/align-crop-128/test \
-# --test_set_path=./data/celeba/align-crop-128/test \
-#
-# --train_dataset=cifar \
-# --valid_dataset=cifar \
-# --test_dataset=cifar \
-# --train_set_path=./data/cifar10/train \
-# --valid_set_path=./data/cifar10/test \
-# --test_set_path=./data/cifar10/test \
-#

@@ -7,7 +7,6 @@ from tensorboardX import SummaryWriter
 
 import utils
 import option
-import eval_ae
 from interpolate_z import interpolate_z
 
 def train():
@@ -46,12 +45,11 @@ def train():
         shuffle=False, num_workers=1)
     test_data_loader = torch.utils.data.DataLoader(
         valid_dataset, batch_size=args.batch_size,
-        shuffle=False, num_workers=4)
+        shuffle=False, num_workers=1)
 
     # Create logger------------------------------------------------------------------------------
     train_logger = SummaryWriter(result_dir_dict['train'])
     valid_logger = SummaryWriter(result_dir_dict['valid'])
-    eval_logger = SummaryWriter(result_dir_dict['eval'])
 
     # -------------------------------------------------------------------------------------------
     # Training ----------------------------------------------------------------------------------
@@ -66,18 +64,6 @@ def train():
         save_img_dir = os.path.join(result_dir_dict['img'], 'epoch-%d' % e)
         utils.save_img_batch(save_img_dir, x_save, test_dataset.post_process, 'input_img')
         utils.save_img_batch(save_img_dir, _x_save, test_dataset.post_process, 'recon_img')
-        interpolate_z(x_save, ae, ((0, 17), (31, 38), (4, 24), (11, 45)), save_img_dir, test_dataset)
-
-        # Evalutaion-----------------------------------------------------------------------------
-        if e % args.eval_epoch_intv == 0:
-            ae.train(mode=False)
-            for param in train_params:
-                param.requires_grad = False
-
-            ae_eval_loss_dict = eval_ae.evaluate(ae, test_data_loader)
-            global_step = e * num_batch
-            for key, value in ae_eval_loss_dict.items():
-                eval_logger.add_scalar(key, value, global_step)
 
         # Learning rate decay--------------------------------------------------------------------
         if e in args.lr_decay_epochs:
@@ -175,7 +161,6 @@ def train():
     # Close logger-------------------------------------------------------------------------------
     train_logger.close()
     valid_logger.close()
-    eval_logger.close()
 
 if __name__ == '__main__':
     args = option.train_parser.parse_args()
