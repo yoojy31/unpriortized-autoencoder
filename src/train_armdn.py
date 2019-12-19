@@ -66,7 +66,6 @@ def train():
 
     num_batch = train_data_loader.__len__()
     for e in range(args.init_epoch, args.max_epoch + 1):
-
         # Save image result----------------------------------------------------------------------
         armdn.train(mode=False)
         z_ = armdn.sample(args.batch_size, args.tau)

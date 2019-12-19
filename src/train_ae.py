@@ -7,7 +7,6 @@ from tensorboardX import SummaryWriter
 
 import utils
 import option
-from interpolate_z import interpolate_z
 
 def train():
     # Create result directories------------------------------------------------------------------

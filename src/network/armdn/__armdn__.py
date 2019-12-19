@@ -10,25 +10,6 @@ class ARMDN(Network):
     def __init__(self, args):
         super(ARMDN, self).__init__(args)
         self.armdn = nn.Sequential()
-        self.order = None
-        self.order_name = self.__class__.__name__ + '.order'
-
-    def set_order(self, order):
-        self.order = order
-
-    def realign_z(self, z):
-        if self.order is not None:
-            z_realign = z.clone()
-            for i, o_i in enumerate(self.order):
-                z_realign[o_i] = z[i]
-            return z_realign
-
-    def inv_realign_z(self, z_realign):
-        if self.order is not None:
-            z = z_realign.clone()
-            for i, o_i in enumerate(self.order):
-                z[i] = z_realign[o_i]
-            return z
 
     def calc_loss(self, z, mu, sig, pi, average=True):
         mdn_loss = mdn_loss_fn(z, mu, sig, pi, average=average)
@@ -36,8 +17,6 @@ class ARMDN(Network):
 
     def forward(self, z, tau=1.0):
         z = torch.squeeze(torch.transpose(z, 1, 2), dim=3)
-        if self.args.ordering and (self.order is not None):
-            z = self.realign_z(z)
 
         batch_size = z.size()[0]
         input_z_size = z.size()[2]
@@ -91,9 +70,6 @@ class ARMDN(Network):
             mu, sig, pi = self.forward(input_z, tau=tau)
             z_i = sample_from_softmax(mu[:, i, :, 0], sig[:, i, :, 0], pi[:, i, :, 0])
             z[:, i] = z_i
-
-        if self.args.ordering and (self.order is not None):
-            z = self.inv_realign_z(z)
         return z
 
     def softmax_with_tau(self, _pi, dim=1, tau=1.0):
@@ -104,18 +80,12 @@ class ARMDN(Network):
 
     def save(self, save_dir):
         if super(ARMDN, self).save(save_dir):
-            if self.order is not None:
-                order_path = self.order_name = '.npy'
-                np.save(order_path, self.order)
             return True
         else:
             return False
 
     def load(self, load_dir):
         if super(ARMDN, self).load(load_dir):
-            order_path = self.order_name = '.npy'
-            if os.path.exists(order_path):
-                self.order = np.load(order_path)
             return True
         else:
             return False

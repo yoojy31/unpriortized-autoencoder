@@ -1,7 +1,7 @@
 #!/bin/bash
 
-LOAD_SNAPSHOT_DIR='snapshot-dir-path-of-trained-autoencoder'
-RESULT_DIR='result-dir-path'
+LOAD_SNAPSHOT_DIR='path-of-autoencoder-snapshot-dir'
+RESULT_DIR='path-of-result-dir'
 
 mkdir $RESULT_DIR
 mkdir $RESULT_DIR/copy
@@ -13,8 +13,8 @@ python3 ./src/train_armdn.py \
 \
 --ae=ae00 \
 --armdn=armdn00 \
---z_size=200 \
---static_z_size=200 \
+--z_size=100 \
+--static_z_size=100 \
 --z_dout_rate=0.0 \
 \
 --n_gauss=30 \
@@ -28,7 +28,7 @@ python3 ./src/train_armdn.py \
 --test_set_path=./data/celeba/align-crop-128/test \
 \
 --batch_size=128 \
---img_size=128 \
+--img_size=64 \
 --img_ch=3 \
 \
 --init_epoch=0 \
