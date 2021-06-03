@@ -18,11 +18,6 @@ Directory Structure
 │   └── (python-source-file.py)
 ├── result
 │   └── (result-directory)
-│       ├── ...
-│       └── snapshot
-│           └── (iteration)
-│               ├── network.pth
-│               └── optimizer.pth
 └── data
     └── coco-2017
         ├── annotations
