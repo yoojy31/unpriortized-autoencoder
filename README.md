@@ -8,22 +8,6 @@ Environment
 -----------
 - PyTorch (0.4>=)
 
-Directory Structure
--------------------
-```
-(root-directory)
-├── README.md
-├── run_mmod.py
-├── src
-│   └── (python-source-file.py)
-├── result
-│   └── (result-directory)
-└── data
-    └── coco-2017
-        ├── annotations
-        └── images
-```
-
 Usage
 -----
 Training
